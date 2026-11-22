@@ -1,47 +1,224 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/bg"
     android:orientation="vertical">
 
+    <!-- tab bar: outlined pill tabs + "+" -->
     <LinearLayout
+        android:id="@+id/tabBarRow"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="46dp"
         android:gravity="center_vertical"
-        android:padding="8dp">
+        android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/urlBar"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_url"
-            android:hint="Search or type URL"
-            android:imeOptions="actionGo"
-            android:inputType="textUri"
-            android:maxLines="1"
-            android:paddingHorizontal="16dp"
-            android:selectAllOnFocus="true"
-            android:textSize="15sp" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/tabStrip"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="4dp" />
+
+        <ImageButton
+            android:id="@+id/btnNewTab"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="New tab"
+            android:src="@drawable/ic_add" />
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progress"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:max="100"
-        android:visibility="gone" />
-
-    <FrameLayout
-        android:id="@+id/container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
+    <!-- address bar: star | pill | reader | reload -->
     <LinearLayout
+        android:id="@+id/addrRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
-        android:background="?attr/colorSurface"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <ImageButton
+            android:id="@+id/btnStar"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Bookmark"
+            android:src="@drawable/ic_star_border" />
+
+        <LinearLayout
+            android:id="@+id/urlPill"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <ImageView
+                android:id="@+id/lockIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="8dp"
+                android:alpha="0.7"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_lock"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/urlField"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Search or enter address"
+                android:imeOptions="actionGo"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:maxLines="1"
+                android:selectAllOnFocus="true"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text_sub"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnReader"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Reader mode"
+            android:src="@drawable/ic_reader" />
+
+        <ImageButton
+            android:id="@+id/btnReload"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Reload"
+            android:src="@drawable/ic_refresh" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/webHolder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/startList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="12dp"
+            android:paddingTop="24dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="24dp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="top"
+            android:max="100"
+            android:progressBackgroundTint="@android:color/transparent"
+            android:progressTint="@color/accent_dark"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/fabTop"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_fab"
+            android:contentDescription="Back to top"
+            android:elevation="4dp"
+            android:src="@drawable/ic_arrow_up"
+            android:visibility="gone" />
+
+        <!-- find in page -->
+        <LinearLayout
+            android:id="@+id/findBar"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_gravity="bottom"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_find"
+            android:elevation="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingEnd="6dp"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/findField"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Find in page"
+                android:imeOptions="actionSearch"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text_sub"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/findCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:textColor="@color/text_sub"
+                android:textSize="13sp" />
+
+            <ImageButton
+                android:id="@+id/findPrev"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Previous"
+                android:src="@drawable/ic_expand_less" />
+
+            <ImageButton
+                android:id="@+id/findNext"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Next"
+                android:src="@drawable/ic_expand_more" />
+
+            <ImageButton
+                android:id="@+id/findClose"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Close"
+                android:src="@drawable/ic_close" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- bottom bar: back | forward | home | bookmarks | tabs | menu -->
+    <LinearLayout
+        android:id="@+id/navRow"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
         android:orientation="horizontal">
 
         <ImageButton
@@ -49,37 +226,43 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
-            android:src="@drawable/ic_back"
-            android:tint="?attr/colorOnSurface" />
+            android:src="@drawable/ic_back" />
 
         <ImageButton
             android:id="@+id/btnForward"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Forward"
-            android:src="@drawable/ic_forward"
-            android:tint="?attr/colorOnSurface" />
+            android:src="@drawable/ic_forward" />
 
         <ImageButton
-            android:id="@+id/btnReload"
+            android:id="@+id/btnHome"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Reload"
-            android:src="@drawable/ic_refresh"
-            android:tint="?attr/colorOnSurface" />
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Home"
+            android:src="@drawable/ic_home" />
+
+        <ImageButton
+            android:id="@+id/btnBookmarks"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Bookmarks"
+            android:src="@drawable/ic_bookmarks" />
 
         <FrameLayout
             android:id="@+id/btnTabs"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Tabs">
 
             <TextView
@@ -90,6 +273,7 @@
                 android:background="@drawable/bg_tabcount"
                 android:gravity="center"
                 android:text="1"
+                android:textColor="@color/icon"
                 android:textSize="12sp"
                 android:textStyle="bold" />
         </FrameLayout>
@@ -99,9 +283,8 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Menu"
-            android:src="@drawable/ic_more"
-            android:tint="?attr/colorOnSurface" />
+            android:src="@drawable/ic_menu" />
     </LinearLayout>
 </LinearLayout>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#212121</color>
+    <color name="surface">#2B2B2B</color>
+    <color name="pill">#3F3F3F</color>
+    <color name="pressed">#505050</color>
+    <color name="text">#FAFAFA</color>
+    <color name="text_sub">#B0B0B0</color>
+    <color name="icon">#FAFAFA</color>
+    <color name="icon_dim">#6F6F6F</color>
+    <color name="outline">#5F5F5F</color>
+    <color name="tab_border">#FAFAFA</color>
+    <color name="divider">#1FFFFFFF</color>
+    <color name="accent">#90CAF9</color>
+    <color name="accent_dark">#90CAF9</color>
+    <color name="scrim">#99000000</color>
+</resources>

@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#212121</color>
-    <color name="surface">#2B2B2B</color>
-    <color name="pill">#3F3F3F</color>
-    <color name="pressed">#505050</color>
-    <color name="text">#FAFAFA</color>
-    <color name="text_sub">#B0B0B0</color>
-    <color name="icon">#FAFAFA</color>
+    <!-- Orbit design tokens, dark: pure black chrome, #222 cards, lavender accent -->
+    <color name="bg">#000000</color>
+    <color name="card">#222222</color>
+    <color name="surface">#222222</color>
+    <color name="pill">#2E2E2E</color>
+    <color name="pressed">#3A3A3A</color>
+    <color name="text">#FFFFFF</color>
+    <color name="text_sub">#A3A3A3</color>
+    <color name="icon">#FFFFFF</color>
     <color name="icon_dim">#6F6F6F</color>
-    <color name="outline">#5F5F5F</color>
-    <color name="tab_border">#FAFAFA</color>
-    <color name="divider">#1FFFFFFF</color>
-    <color name="accent">#90CAF9</color>
-    <color name="accent_dark">#90CAF9</color>
+    <color name="outline">#7A7A7A</color>
+    <color name="tab_border">#FFFFFF</color>
+    <color name="tab_active">#1E9E4A</color>
+    <color name="divider">#26FFFFFF</color>
+    <color name="accent">#A4A4EA</color>
+    <color name="accent_dark">#A4A4EA</color>
+    <color name="value">#8D98D8</color>
     <color name="scrim">#99000000</color>
 </resources>

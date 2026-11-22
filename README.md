@@ -28,6 +28,12 @@ icons are Material Design icons (Apache-2.0).
 - Back-to-top button, pull to refresh, volume-key scrolling, memory saving for background tabs
 - Search engine choice, home page, set as default browser
 
+## Settings (Soul-style tree)
+Settings is now a tree of pages with grouped cards, like the reference browser: General, Advanced, Site, Backup,
+Web cleaner, Download, Media, Memory saving, Display, Layout, Menu, Tab, Composition, Web content, Gesture,
+Translator, Text to Speech, TV Cast, Security, Incognito mode, Password, Clear data, DNS. Every row saves.
+See `SETTINGS_STATUS.md` for which rows already change behaviour and which are stored for later.
+
 ## Not built yet
 Bookmark folders, tab groups by overlapping, one-handed / mini mode, floating button, search suggestions,
 QR code, search by image, music player, widgets, DRM video, DASH download, auto-translate, 24 languages.

@@ -54,7 +54,7 @@
                 android:layout_weight="1"
                 android:background="@null"
                 android:gravity="center_vertical"
-                android:hint="Search or enter address"
+                android:hint="Search or type URL"
                 android:imeOptions="actionGo"
                 android:importantForAutofill="no"
                 android:inputType="textUri"

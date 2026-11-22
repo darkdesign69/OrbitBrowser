@@ -51,6 +51,42 @@ object K {
     const val THIRD_COOKIES = "third_cookies"
     const val SITE_AD_OFF = "site_ad_off"
     const val SITE_JS_OFF = "site_js_off"
+    const val SITE_OVERLAY_OFF = "site_overlay_off"
+    const val SITE_POPUP_OFF = "site_popup_off"
+    const val BLOCKED_LINKS = "blocked_links"
+    const val MEM_KEEP = "mem_keep"
+    const val TR_BLACK = "tr_black"
+
+    // keys read by the browser screen
+    const val BACK_TWICE = "back_twice"
+    const val KEYBOARD_START = "keyboard_start"
+    const val UA = "user_agent"
+    const val ROTATION = "screen_rotation"
+    const val BRIGHTNESS = "brightness"
+    const val SCREEN_TIMEOUT = "screen_timeout"
+    const val FULLSCREEN = "fullscreen"
+    const val SAFE_BROWSING = "safe_browsing"
+    const val TR_LANG = "tr_lang"
+    const val TTS_RATE = "tts_rate"
+    const val MENU_STYLE = "menu_style"
+    const val ADDR_LABEL = "addr_label"
+    const val NEW_TAB = "new_tab_page"
+    const val START_PAGE = "start_page"
+    const val LP_LINK = "lp_link"
+    const val LP_IMAGE = "lp_image"
+    const val SCREEN_FILTER = "screen_filter"
+    const val FILTER_COLOR = "filter_color"
+    const val BACK_LAST = "back_last"
+    const val SHOW_SCROLLBAR = "show_scrollbar"
+    const val HOME_CLOSE_ALL = "home_close_all"
+}
+
+/** Languages offered for translation: label and language code ("" = follow the system). */
+object Langs {
+    val labels = listOf("System", "English", "Bengali", "Hindi", "Arabic", "Spanish", "French", "German",
+        "Portuguese", "Russian", "Japanese", "Korean", "Chinese", "Turkish", "Italian", "Indonesian", "Vietnamese", "Thai")
+    val codes = listOf("", "en", "bn", "hi", "ar", "es", "fr", "de", "pt", "ru", "ja", "ko", "zh-CN", "tr", "it", "id", "vi", "th")
+    fun target(p: Prefs): String = codes.getOrElse(p.int(K.TR_LANG)) { "" }.ifEmpty { java.util.Locale.getDefault().language }
 }
 
 object Engines {
@@ -109,6 +145,7 @@ class Prefs(context: Context) {
     val backTop get() = bool(K.BACK_TOP)
     val volScroll get() = bool(K.VOL_SCROLL)
     val pageDark get() = bool(K.PAGE_DARK)
+    val safeBrowsing get() = bool(K.SAFE_BROWSING)
     val textZoom get() = int(K.TEXT_ZOOM)
     val desktopAll get() = bool(K.DESKTOP_ALL)
     val adBlock get() = bool(K.ADBLOCK)
@@ -131,7 +168,7 @@ class Prefs(context: Context) {
     }
 
     companion object {
-        val DEFAULTS: Map<String, Any> = mapOf(
+        val DEFAULTS: MutableMap<String, Any> = hashMapOf(
             K.ADDR_BOTTOM to false,
             K.SCROLL_HIDE to false,
             K.TAB_BAR to true,
@@ -141,11 +178,11 @@ class Prefs(context: Context) {
             K.PULL_REFRESH to true,
             K.BACK_TOP to true,
             K.VOL_SCROLL to false,
-            K.THEME to 0,
+            K.THEME to 2,
             K.PAGE_DARK to false,
             K.TEXT_ZOOM to 100,
             K.DESKTOP_ALL to false,
-            K.ENGINE to 0,
+            K.ENGINE to 1,
             K.HOMEPAGE to "",
             K.ADBLOCK to true,
             K.POPUP to 1,
@@ -169,7 +206,36 @@ class Prefs(context: Context) {
             K.COOKIES to true,
             K.THIRD_COOKIES to true,
             K.SITE_AD_OFF to "",
-            K.SITE_JS_OFF to ""
+            K.SITE_JS_OFF to "",
+            K.SITE_OVERLAY_OFF to "",
+            K.SITE_POPUP_OFF to "",
+            K.BLOCKED_LINKS to "",
+            K.MEM_KEEP to "",
+            K.TR_BLACK to "",
+            K.BACK_TWICE to false,
+            K.KEYBOARD_START to false,
+            K.UA to 0,
+            K.ROTATION to 0,
+            K.BRIGHTNESS to 0,
+            K.SCREEN_TIMEOUT to 0,
+            K.FULLSCREEN to false,
+            K.SAFE_BROWSING to true,
+            K.TR_LANG to 0,
+            K.TTS_RATE to 2,
+            K.MENU_STYLE to 0,
+            K.ADDR_LABEL to 0,
+            K.NEW_TAB to 0,
+            K.START_PAGE to 0,
+            K.LP_LINK to 0,
+            K.LP_IMAGE to 0,
+            K.SCREEN_FILTER to 0,
+            K.FILTER_COLOR to 0xFF000000.toInt(),
+            K.BACK_LAST to 0,
+            K.SHOW_SCROLLBAR to 0,
+            K.HOME_CLOSE_ALL to false,
+            "allow_zoom" to true,
+            "adv_mixed" to true,
+            "adv_dom_storage" to true
         )
     }
 }

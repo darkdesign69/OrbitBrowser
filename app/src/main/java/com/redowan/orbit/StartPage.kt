@@ -39,7 +39,7 @@ class DialAdapter(private val a: MainActivity) : RecyclerView.Adapter<DialAdapte
         val radius = ctx.dp(18).toFloat()
         h.icon.imageTintList = null
         if (position == items.size) {
-            h.tile.background = Ui.roundRect(ctx.color(R.color.pill), radius)
+            h.tile.background = Ui.roundRect(ctx.color(R.color.pill), ctx.dp(29).toFloat())
             h.letter.visibility = View.GONE
             h.icon.visibility = View.VISIBLE
             h.icon.setImageResource(R.drawable.ic_add)
@@ -66,7 +66,7 @@ class DialAdapter(private val a: MainActivity) : RecyclerView.Adapter<DialAdapte
                 h.icon.visibility = View.VISIBLE
                 h.icon.setImageBitmap(fav)
             } else {
-                h.tile.background = Ui.roundRect(Ui.tileColor(hostOf(d.url).ifEmpty { d.title }), radius)
+                h.tile.background = Ui.roundRect(Ui.tileColor(hostOf(d.url).ifEmpty { d.title }), ctx.dp(29).toFloat())
                 h.icon.visibility = View.GONE
                 h.letter.visibility = View.VISIBLE
                 h.letter.text = Ui.letterOf(d.title, d.url)

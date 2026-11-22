@@ -8,7 +8,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.Manifest
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.speech.tts.TextToSpeech
+import androidx.appcompat.app.AppCompatDialog
 import android.content.res.Configuration
 import android.os.Build
 import android.view.MotionEvent
@@ -122,6 +125,8 @@ class MainActivity : AppCompatActivity() {
 
     // full-screen video
     private var customView: View? = null
+    private var lastBackAt = 0L
+    private var tts: TextToSpeech? = null
     private var customCb: WebChromeClient.CustomViewCallback? = null
 
     // file upload
@@ -184,7 +189,13 @@ class MainActivity : AppCompatActivity() {
                     cur.web?.canGoBack() == true && !cur.home -> cur.web?.goBack()
                     !cur.home && tabs.size == 1 -> goHome()
                     tabs.size > 1 -> closeTab(current)
-                    else -> { isEnabled = false; onBackPressedDispatcher.onBackPressed() }
+                    else -> {
+                        if (prefs.bool(K.BACK_TWICE)) {
+                            val now = SystemClock.elapsedRealtime()
+                            if (now - lastBackAt > 2000) { lastBackAt = now; toast("Press back again to exit"); return }
+                        }
+                        isEnabled = false; onBackPressedDispatcher.onBackPressed()
+                    }
                 }
             }
         })
@@ -223,6 +234,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        tts?.shutdown()
         if (isFinishing) {
             if (prefs.bool(K.EXIT_HISTORY)) store.clearHistory()
             if (prefs.bool(K.EXIT_COOKIES)) {
@@ -359,8 +371,35 @@ class MainActivity : AppCompatActivity() {
 
         tabs.forEach { applyWebSettings(it) }
         updateSecureFlag()
+        applyDisplayPrefs()
         updateAddress()
         updateMediaFab()
+    }
+
+    /** Orientation, brightness, screen-on and full screen from Settings > Display / Composition. */
+    private fun applyDisplayPrefs() {
+        requestedOrientation = when (prefs.int(K.ROTATION)) {
+            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+        if (prefs.int(K.SCREEN_TIMEOUT) == 1) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val lp = window.attributes
+        lp.screenBrightness = when (prefs.int(K.BRIGHTNESS)) {
+            1 -> 0.15f
+            2 -> 0.5f
+            3 -> 0.9f
+            else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        }
+        window.attributes = lp
+        if (customView == null) {
+            val c = WindowInsetsControllerCompat(window, window.decorView)
+            if (prefs.bool(K.FULLSCREEN)) {
+                c.hide(WindowInsetsCompat.Type.systemBars())
+                c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else c.show(WindowInsetsCompat.Type.systemBars())
+        }
     }
 
     private fun updateSecureFlag() {
@@ -570,7 +609,12 @@ class MainActivity : AppCompatActivity() {
             // like Soul: show only the site name, centred, until the field is tapped
             urlField.gravity = Gravity.CENTER
             val host = hostOf(t.url).removePrefix("www.")
-            urlField.setText(if (t.home) "" else host.ifEmpty { t.url ?: "" })
+            val label = when (prefs.int(K.ADDR_LABEL)) {
+                1 -> t.title.ifBlank { host }
+                2 -> t.url ?: ""
+                else -> host.ifEmpty { t.url ?: "" }
+            }
+            urlField.setText(if (t.home) "" else label)
         }
         val https = t.url?.startsWith("https://") == true && !t.home
         lockIcon.visibility = if (https) View.VISIBLE else View.GONE
@@ -634,10 +678,19 @@ class MainActivity : AppCompatActivity() {
         val w = tab.web ?: return
         val s = w.settings
         val desktop = tab.desktop || prefs.desktopAll
-        s.userAgentString = if (desktop) desktopUa() else defaultUa
+        val uaMode = prefs.int(K.UA)            // 0 Android, 1 Desktop, 2 iPhone
+        s.userAgentString = when {
+            desktop || uaMode == 1 -> desktopUa()
+            uaMode == 2 -> IPHONE_UA
+            else -> defaultUa
+        }
         s.useWideViewPort = true
         s.loadWithOverviewMode = true
         s.textZoom = prefs.textZoom
+        s.setSupportZoom(prefs.bool("allow_zoom"))
+        s.domStorageEnabled = prefs.bool("adv_dom_storage")
+        s.mixedContentMode = if (prefs.bool("adv_mixed")) WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE else WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        w.isVerticalScrollBarEnabled = prefs.int(K.SHOW_SCROLLBAR) == 1
         s.blockNetworkImage = prefs.imagesOff
         s.javaScriptEnabled = prefs.js && !prefs.siteHas(K.SITE_JS_OFF, tab.host)
         s.cacheMode = if (tab.incognito) WebSettings.LOAD_NO_CACHE else WebSettings.LOAD_DEFAULT
@@ -658,7 +711,7 @@ class MainActivity : AppCompatActivity() {
             displayZoomControls = false
             allowFileAccess = false
             allowContentAccess = false
-            safeBrowsingEnabled = true
+            safeBrowsingEnabled = prefs.safeBrowsing
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
         w.webViewClient = client(tab)
@@ -724,7 +777,7 @@ class MainActivity : AppCompatActivity() {
                 view.postDelayed({ scanMedia(tab) }, 800)
                 view.postDelayed({ scanMedia(tab) }, 3500)
             }
-            if (prefs.bool(K.OVERLAY)) view.postDelayed({ view.evaluateJavascript(OVERLAY_JS, null) }, 1200)
+            if (prefs.bool(K.OVERLAY) && !prefs.siteHas(K.SITE_OVERLAY_OFF, tab.host)) view.postDelayed({ view.evaluateJavascript(OVERLAY_JS, null) }, 1200)
             if (tab === cur) {
                 webHolder.isRefreshing = false
                 updateAddress(); updateNav()
@@ -862,7 +915,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
-            val mode = prefs.popup            // 0 allow, 1 block suspected ads, 2 block all
+            val mode = if (prefs.siteHas(K.SITE_POPUP_OFF, tab.host)) 0 else prefs.popup   // 0 allow, 1 block suspected ads, 2 block all
             if (mode == 2 || (mode == 1 && !isUserGesture)) return false
             val t = Tab(null, tab.incognito)
             t.home = false
@@ -1055,6 +1108,176 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMenu() {
+        if (prefs.int(K.MENU_STYLE) == 1) showGridMenu() else showPopupMenu()
+    }
+
+    private fun readAloud(t: Tab) {
+        val engine = tts
+        if (engine != null && engine.isSpeaking) { engine.stop(); toast("Stopped"); return }
+        t.web?.evaluateJavascript("(document.body && document.body.innerText) || ''") { raw ->
+            val text = try { JSONTokener(raw).nextValue() as? String } catch (_: Exception) { null }
+            if (text.isNullOrBlank()) { toast("Nothing to read"); return@evaluateJavascript }
+            val rates = floatArrayOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+            val speak = { e: TextToSpeech ->
+                e.setSpeechRate(rates[prefs.int(K.TTS_RATE).coerceIn(0, rates.size - 1)])
+                text.chunked(3500).forEachIndexed { i, c ->
+                    e.speak(c, if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD, null, "orbit$i")
+                }
+            }
+            val existing = tts
+            if (existing != null) speak(existing) else {
+                var created: TextToSpeech? = null
+                created = TextToSpeech(applicationContext) { status ->
+                    if (status == TextToSpeech.SUCCESS) created?.let { speak(it) } else toast("Text-to-speech is not available")
+                }
+                tts = created
+            }
+        }
+    }
+
+    /** Soul-style popup: quick buttons on top, grouped cards, Incognito / Desktop / DNS at the bottom. */
+    private fun showPopupMenu() {
+        val t = cur
+        val starred = store.isBookmarked(t.url)
+        val d = AppCompatDialog(this, R.style.PopupDialog)
+        val inf = LayoutInflater.from(this)
+        val matchW = ViewGroup.LayoutParams.MATCH_PARENT
+        val wrapH = ViewGroup.LayoutParams.WRAP_CONTENT
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, tv, true)
+        val rippleRes = tv.resourceId
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4), dp(4), dp(4), dp(12))
+        }
+        fun newCard(): LinearLayout {
+            val c = LinearLayout(this)
+            c.orientation = LinearLayout.VERTICAL
+            c.setBackgroundResource(R.drawable.bg_c_single)
+            root.addView(c, LinearLayout.LayoutParams(matchW, wrapH).apply { topMargin = dp(8) })
+            return c
+        }
+        fun row(card: LinearLayout, icon: Int, label: String, act: () -> Unit) {
+            val v = inf.inflate(R.layout.item_pmenu, card, false)
+            v.findViewById<ImageView>(R.id.pmIcon).setImageResource(icon)
+            v.findViewById<TextView>(R.id.pmLabel).text = label
+            v.setOnClickListener { d.dismiss(); act() }
+            card.addView(v)
+        }
+
+        // quick buttons
+        val top = newCard()
+        top.orientation = LinearLayout.HORIZONTAL
+        fun quick(icon: Int, desc: String, dim: Boolean, act: () -> Unit) {
+            val b = ImageButton(this)
+            b.setImageResource(icon)
+            b.setBackgroundResource(rippleRes)
+            b.contentDescription = desc
+            b.alpha = if (dim) 0.4f else 1f
+            b.setOnClickListener { d.dismiss(); act() }
+            top.addView(b, LinearLayout.LayoutParams(0, dp(54), 1f))
+        }
+        quick(R.drawable.ic_refresh, "Reload", false) { if (cur.home) dialAdapter.reload() else cur.web?.reload() }
+        quick(R.drawable.ic_shield, "Ad blocker", !prefs.adBlock) {
+            prefs.setBool(K.ADBLOCK, !prefs.adBlock)
+            toast(if (prefs.adBlock) "Ad blocker on" else "Ad blocker off")
+            cur.web?.reload()
+        }
+        quick(if (starred) R.drawable.ic_star else R.drawable.ic_star_border, "Bookmark", false, needPage { toggleBookmark(it) })
+        quick(R.drawable.ic_bookmarks, "Bookmarks", false) { openLibrary("bookmarks") }
+        quick(R.drawable.ic_settings, "Settings", false) { startActivity(Intent(this, SettingsActivity::class.java)) }
+
+        val a = newCard()
+        row(a, R.drawable.ic_power, "Exit app") { finishAndRemoveTask() }
+        row(a, R.drawable.ic_history, "History") { openLibrary("history") }
+        row(a, R.drawable.ic_download, "Downloads") {
+            try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) } catch (_: Exception) { toast("No downloads app") }
+        }
+        row(a, R.drawable.ic_add, "New tab") { newTab(null) }
+
+        val b = newCard()
+        row(b, R.drawable.ic_fullscreen_enter, if (prefs.bool(K.FULLSCREEN)) "Exit full screen" else "Full screen") {
+            prefs.setBool(K.FULLSCREEN, !prefs.bool(K.FULLSCREEN)); applyDisplayPrefs()
+        }
+        row(b, R.drawable.ic_dark, if (prefs.pageDark) "Light mode" else "Dark mode") {
+            prefs.setBool(K.PAGE_DARK, !prefs.pageDark)
+            tabs.forEach { tb -> tb.web?.let { w -> injectPageDark(w) } }
+        }
+        row(b, R.drawable.ic_translate, "Translate", needPage { tb ->
+            navigate(tb, "https://translate.google.com/translate?sl=auto&tl=${Langs.target(prefs)}&u=" + Uri.encode(tb.url))
+        })
+        row(b, R.drawable.ic_volume, "Read aloud", needPage { readAloud(it) })
+        row(b, R.drawable.ic_search, "Find in page") { openFind() }
+
+        val c = newCard()
+        row(c, R.drawable.ic_share, "Share URL", needPage { share(it.url ?: "") })
+        row(c, R.drawable.ic_copy, "Copy link", needPage { copy(it.url ?: "") })
+        row(c, R.drawable.ic_open_new, "Open in app", needPage { openWithApp(it.url ?: "") })
+        row(c, R.drawable.ic_add, "Add current page", needPage { tb ->
+            val list = store.dial()
+            list.add(Dial(tb.label().take(24), tb.url))
+            store.saveDial(list)
+            toast("Added to start page")
+        })
+        row(c, R.drawable.ic_print, "Print / PDF", needPage { tb ->
+            val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
+            val name = tb.label()
+            pm.print(name, tb.web!!.createPrintDocumentAdapter(name), PrintAttributes.Builder().build())
+        })
+        row(c, R.drawable.ic_reader, if (t.readerOn) "Exit reader" else "Reader mode", needPage { toggleReader() })
+        row(c, R.drawable.ic_dashboard, "Page source", needPage { showSource(it) })
+        row(c, R.drawable.ic_video_library, "Page media") {
+            if (cur.media.isEmpty()) toast("No media found on this page yet") else MediaUi.showSheet(this, cur)
+        }
+        row(c, R.drawable.ic_text, "Text size") {
+            Ui.listSheet(this, "Text size", listOf(80, 90, 100, 115, 130, 150).map { sz ->
+                "$sz%" to {
+                    prefs.setInt(K.TEXT_ZOOM, sz)
+                    tabs.forEach { tb -> applyWebSettings(tb) }
+                }
+            })
+        }
+        row(c, R.drawable.ic_close, "Hide overlays", needPage { tb ->
+            tb.web?.evaluateJavascript(OVERLAY_JS) { n -> toast("Removed ${n ?: "0"} overlay(s)") }
+        })
+        row(c, R.drawable.ic_lock, "Site settings", needPage { siteSettings(it) })
+
+        // bottom row
+        val bottom = newCard()
+        bottom.orientation = LinearLayout.HORIZONTAL
+        fun bItem(icon: Int, label: String, act: () -> Unit) {
+            val v = inf.inflate(R.layout.item_menu, bottom, false)
+            v.findViewById<ImageView>(R.id.menuIcon).setImageResource(icon)
+            v.findViewById<TextView>(R.id.menuLabel).text = label
+            v.setOnClickListener { d.dismiss(); act() }
+            bottom.addView(v)
+        }
+        bItem(R.drawable.ic_incognito, "Incognito mode") { newTab(null, true) }
+        bItem(R.drawable.ic_desktop, if (t.desktop) "Mobile" else "Desktop", needPage {
+            it.desktop = !it.desktop; applyWebSettings(it); it.web?.reload()
+        })
+        bItem(R.drawable.ic_key, "DNS") {
+            startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", "dns"))
+        }
+
+        val scroll = ScrollView(this)
+        scroll.addView(root)
+        scroll.setOnClickListener { d.dismiss() }
+        d.setContentView(scroll)
+        d.window?.let { w ->
+            val dm = resources.displayMetrics
+            w.setLayout((dm.widthPixels * 0.68f).toInt(), (dm.heightPixels * 0.86f).toInt())
+            w.setGravity(Gravity.TOP or Gravity.END)
+            val lp = w.attributes
+            lp.y = dp(52)
+            lp.x = dp(4)
+            w.attributes = lp
+        }
+        d.show()
+    }
+
+    private fun showGridMenu() {
         val t = cur
         val starred = store.isBookmarked(t.url)
         val items = listOf(
@@ -1090,7 +1313,7 @@ class MainActivity : AppCompatActivity() {
             }),
 
             MenuItem(R.drawable.ic_translate, "Translate", needPage { tb ->
-                val lang = Locale.getDefault().language
+                val lang = Langs.target(prefs)
                 navigate(tb, "https://translate.google.com/translate?sl=auto&tl=$lang&u=" + Uri.encode(tb.url))
             }),
             MenuItem(R.drawable.ic_dashboard, "Page source", needPage { showSource(it) }),
@@ -1357,6 +1580,8 @@ class MainActivity : AppCompatActivity() {
                 "img,video,picture,canvas,iframe,svg image{filter:invert(1) hue-rotate(180deg)!important}';" +
                 "(document.head||document.documentElement).appendChild(s)})()"
 
+        private const val IPHONE_UA =
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         private const val OVERLAY_JS =
             "(function(){var n=0;[].forEach.call(document.querySelectorAll('body *'),function(e){var s=getComputedStyle(e);" +
                 "if((s.position==='fixed'||s.position==='sticky')&&parseInt(s.zIndex||'0')>=100&&" +

@@ -38,6 +38,9 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
+import android.webkit.MimeTypeMap
+import android.util.Base64
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -179,6 +182,7 @@ class MainActivity : AppCompatActivity() {
 
         wireClicks()
         restoreTabs()
+        if (prefs.bool(K.KEYBOARD_START) && cur.home) urlField.post { urlField.requestFocus(); urlField.showKeyboard() }
         handleIntent(intent)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -535,13 +539,27 @@ class MainActivity : AppCompatActivity() {
         }
         urlField.imeOptions = EditorInfo.IME_ACTION_GO or
             (if (t.incognito && prefs.keySecure) EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING else 0)
-        urlField.hint = if (t.incognito) "Incognito: search or enter address" else "Search or enter address"
+        urlField.hint = if (t.incognito) "Incognito: search or type URL" else "Search or type URL"
         showBars()
         updateSecureFlag()
         updateAddress()
         updateNav()
         refreshTabs()
         updateMediaFab()
+        enforceTabLimit()
+    }
+
+    /** Settings > Memory saving: keep at most N tabs loaded, release the ones farthest from the current tab. */
+    private fun enforceTabLimit() {
+        val limit = prefs.int("mem_tab_limit")
+        if (limit <= 0) return
+        val live = tabs.filter { it.web != null && it !== cur && !it.incognito }
+        val loaded = tabs.count { it.web != null }
+        val excess = loaded - limit
+        if (excess <= 0) return
+        live.sortedByDescending { kotlin.math.abs(tabs.indexOf(it) - current) }.take(excess).forEach {
+            capture(it); destroyTab(it)
+        }
     }
 
     // ------------------------------------------------------------------ navigation
@@ -716,7 +734,8 @@ class MainActivity : AppCompatActivity() {
         }
         w.webViewClient = client(tab)
         w.webChromeClient = chrome(tab)
-        w.setDownloadListener { url, ua, cd, mime, _ -> startDownload(url, ua, cd, mime) }
+        w.setDownloadListener { url, ua, cd, mime, _ -> startDownload(url, ua, cd, mime, tab.url) }
+        w.addJavascriptInterface(BlobBridge(), "OrbitBlob")
         w.setFindListener { active, total, _ ->
             if (tab === cur) findCount.text = if (total == 0) "0" else "${active + 1}/$total"
         }
@@ -953,8 +972,22 @@ class MainActivity : AppCompatActivity() {
         val r = w.hitTestResult
         val extra = r.extra
         when (r.type) {
-            WebView.HitTestResult.SRC_ANCHOR_TYPE -> if (extra != null) { linkMenu(extra, null); return true }
-            WebView.HitTestResult.IMAGE_TYPE -> if (extra != null) { linkMenu(null, extra); return true }
+            WebView.HitTestResult.SRC_ANCHOR_TYPE -> if (extra != null) {
+                when (prefs.int(K.LP_LINK)) {
+                    1 -> newTab(extra)
+                    2 -> copy(extra)
+                    else -> linkMenu(extra, null)
+                }
+                return true
+            }
+            WebView.HitTestResult.IMAGE_TYPE -> if (extra != null) {
+                when (prefs.int(K.LP_IMAGE)) {
+                    1 -> startDownload(extra, null, null, null)
+                    2 -> newTab(extra)
+                    else -> linkMenu(null, extra)
+                }
+                return true
+            }
             WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> {
                 val h = Handler(Looper.getMainLooper()) { m ->
                     linkMenu(m.data.getString("url"), m.data.getString("src") ?: extra)
@@ -989,20 +1022,118 @@ class MainActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ downloads and sharing
 
-    private fun startDownload(url: String, ua: String?, cd: String?, mime: String?) {
-        if (!url.startsWith("http")) { toast("This download type isn't supported"); return }
+    private val blobTokens: MutableSet<String> = java.util.Collections.synchronizedSet(HashSet())
+    private var askedNotifications = false
+
+    /**
+     * Normal files go to Android's download manager (keeps running in the background and survives the app
+     * being closed). blob: and data: files can't be fetched by the system, so they are read from the page
+     * and saved by Orbit itself. Everything lands in Downloads/Orbit and shows in the Downloads list.
+     */
+    private fun startDownload(
+        url: String, ua: String?, cd: String?, mime: String?,
+        referer: String? = tabs.getOrNull(current)?.url
+    ) {
+        when {
+            url.startsWith("blob:") -> { downloadBlob(url, cd, mime); return }
+            url.startsWith("data:") -> { downloadData(url, cd, mime); return }
+            !url.startsWith("http") -> { toast("This download type isn't supported"); return }
+        }
+        val name = URLUtil.guessFileName(url, cd, mime).replace('/', '_').ifBlank { "download" }
+        val go = { enqueueDownload(url, ua, mime, referer, name) }
+        if (prefs.bool("dl_ask")) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Download file?")
+                .setMessage(name)
+                .setPositiveButton("Download") { _, _ -> go() }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } else go()
+    }
+
+    private fun enqueueDownload(url: String, ua: String?, mime: String?, referer: String?, name: String) {
         try {
-            val name = URLUtil.guessFileName(url, cd, mime)
             val req = DownloadManager.Request(Uri.parse(url))
             if (!mime.isNullOrEmpty()) req.setMimeType(mime)
             CookieManager.getInstance().getCookie(url)?.let { req.addRequestHeader("Cookie", it) }
             if (!ua.isNullOrEmpty()) req.addRequestHeader("User-Agent", ua)
-            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+            if (!referer.isNullOrEmpty() && referer.startsWith("http")) req.addRequestHeader("Referer", referer)
+            req.setTitle(name)
+            req.setNotificationVisibility(
+                if (prefs.bool("dl_notify")) DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                else DownloadManager.Request.VISIBILITY_VISIBLE
+            )
+            if (prefs.bool("dl_wifi")) req.setAllowedOverMetered(false)
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Orbit/$name")
             (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(req)
             toast("Downloading $name")
+            if (Build.VERSION.SDK_INT >= 33 && !askedNotifications &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                askedNotifications = true
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 11)
+            }
         } catch (_: Exception) {
-            toast("Download failed")
+            toast("Couldn't start the download")
+        }
+    }
+
+    /** Replaces a generic ".bin" name with the extension that belongs to the file type. */
+    private fun fileNameFor(guess: String, type: String): String {
+        val clean = guess.replace('/', '_').ifBlank { "download" }
+        if (clean.endsWith(".bin")) {
+            MimeTypeMap.getSingleton().getExtensionFromMimeType(type)?.let { return clean.removeSuffix(".bin") + "." + it }
+        }
+        return clean
+    }
+
+    private fun downloadData(url: String, cd: String?, mime: String?) {
+        Thread {
+            try {
+                val comma = url.indexOf(',')
+                val header = url.substring(5, comma)
+                val type = header.substringBefore(';').ifEmpty { mime ?: "application/octet-stream" }
+                val payload = url.substring(comma + 1)
+                val bytes = if (header.endsWith(";base64")) Base64.decode(payload, Base64.DEFAULT) else Uri.decode(payload).toByteArray()
+                val name = fileNameFor(URLUtil.guessFileName(url, cd, type), type)
+                runOnUiThread { Downloader.saveBytes(this, name, bytes); toast("Saving $name") }
+            } catch (_: Exception) {
+                runOnUiThread { toast("Couldn't read this download") }
+            }
+        }.start()
+    }
+
+    private fun downloadBlob(url: String, cd: String?, mime: String?) {
+        val w = cur.web ?: return
+        val token = java.util.UUID.randomUUID().toString()
+        blobTokens.add(token)
+        val name = fileNameFor(URLUtil.guessFileName(url, cd, mime), mime ?: "")
+        fun q(x: String) = JSONObject.quote(x)
+        val js = "(function(){fetch(" + q(url) + ").then(function(r){return r.blob();}).then(function(b){" +
+            "var f=new FileReader();f.onloadend=function(){OrbitBlob.save(" + q(token) + "," + q(name) + ",String(f.result));};" +
+            "f.readAsDataURL(b);}).catch(function(){OrbitBlob.save(" + q(token) + "," + q(name) + ",'');});})();"
+        w.evaluateJavascript(js, null)
+        toast("Preparing $name")
+    }
+
+    /** Receives the bytes of a blob: file from the page. Only accepts a call that carries a one-time token. */
+    private inner class BlobBridge {
+        @JavascriptInterface
+        fun save(token: String, name: String, dataUrl: String) {
+            if (!blobTokens.remove(token)) return
+            if (!dataUrl.startsWith("data:") || dataUrl.length > 120_000_000) {
+                runOnUiThread { toast("Couldn't save the file") }
+                return
+            }
+            try {
+                val comma = dataUrl.indexOf(',')
+                val type = dataUrl.substring(5, comma).substringBefore(';')
+                val bytes = Base64.decode(dataUrl.substring(comma + 1), Base64.DEFAULT)
+                val finalName = fileNameFor(name, type)
+                runOnUiThread { Downloader.saveBytes(this@MainActivity, finalName, bytes); toast("Saving $finalName") }
+            } catch (_: Exception) {
+                runOnUiThread { toast("Couldn't save the file") }
+            }
         }
     }
 
@@ -1192,7 +1323,7 @@ class MainActivity : AppCompatActivity() {
         row(a, R.drawable.ic_power, "Exit app") { finishAndRemoveTask() }
         row(a, R.drawable.ic_history, "History") { openLibrary("history") }
         row(a, R.drawable.ic_download, "Downloads") {
-            try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) } catch (_: Exception) { toast("No downloads app") }
+            startActivity(Intent(this, DownloadsActivity::class.java))
         }
         row(a, R.drawable.ic_add, "New tab") { newTab(null) }
 
@@ -1292,7 +1423,7 @@ class MainActivity : AppCompatActivity() {
             MenuItem(R.drawable.ic_history, "History") { openLibrary("history") },
 
             MenuItem(R.drawable.ic_download, "Downloads") {
-                try { startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) } catch (_: Exception) { toast("No downloads app") }
+                startActivity(Intent(this, DownloadsActivity::class.java))
             },
             MenuItem(R.drawable.ic_search, "Find in page") { openFind() },
             MenuItem(R.drawable.ic_desktop, if (t.desktop) "Mobile site" else "Desktop site", needPage {

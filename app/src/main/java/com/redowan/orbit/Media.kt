@@ -154,6 +154,9 @@ object Downloader {
         @Volatile var state = 0            // 0 running, 1 finished, 2 failed
         @Volatile var error: String? = null
         @Volatile var fileName: String = ""
+        @Volatile var cancelled = false
+        @Volatile var uri: Uri? = null
+        val startedAt = System.currentTimeMillis()
         val percent: Int get() = if (total > 0) ((done * 100) / total).toInt().coerceIn(0, 100) else -1
     }
 
@@ -168,6 +171,43 @@ object Downloader {
     private var nextId = 1000
 
     fun jobFor(item: MediaItem): Job? = jobs.lastOrNull { it.item.url == item.url }
+
+    /** Stops a running job; the file that was being written is deleted. */
+    fun cancel(job: Job) {
+        job.cancelled = true
+    }
+
+    /** Saves bytes that are already in memory (blob: and data: downloads) to Downloads/Orbit. */
+    fun saveBytes(ctx: Context, name: String, data: ByteArray): Job {
+        val app = ctx.applicationContext
+        val clean = uniqueName(name.substringBeforeLast('.', name), name.substringAfterLast('.', "bin"))
+        val item = MediaItem("saved:$clean", MediaKind.VIDEO, clean.substringAfterLast('.', "bin"), null, null, null)
+        val job = Job(item)
+        job.fileName = clean
+        job.total = data.size.toLong()
+        jobs.add(job)
+        val id = nextId++
+        pool.execute {
+            try {
+                val sink = Sink(app, clean)
+                try {
+                    sink.write(data)
+                    job.done = data.size.toLong()
+                    job.uri = sink.finish()
+                } catch (e: Exception) {
+                    sink.abort(); throw e
+                }
+                job.state = 1
+            } catch (e: Exception) {
+                job.state = 2
+                job.error = e.message ?: "Couldn't save the file"
+            }
+            notifyUser(app, job, id, true)
+            main.post { listener?.invoke() }
+        }
+        main.post { listener?.invoke() }
+        return job
+    }
 
     fun start(ctx: Context, item: MediaItem, variantUrl: String?, ua: String, cookie: String?): Job {
         val app = ctx.applicationContext
@@ -228,7 +268,7 @@ object Downloader {
         val sink = Sink(ctx, name)
         try {
             c.inputStream.use { copy(it, sink, job, ctx, id) }
-            sink.finish()
+            job.uri = sink.finish()
         } catch (e: Exception) {
             sink.abort(); throw e
         }
@@ -255,7 +295,7 @@ object Downloader {
         try {
             pl.mapUri?.let { sink.write(bytes(it, item, ua, cookie)) }
             for (s in pl.segs) {
-                if (job.state == 2) break
+                if (job.cancelled) throw IllegalStateException("Cancelled")
                 var data: ByteArray? = null
                 var lastErr: Exception? = null
                 for (attempt in 1..3) {
@@ -278,7 +318,7 @@ object Downloader {
                 notifyUser(ctx, job, id, false)
                 main.post { listener?.invoke() }
             }
-            sink.finish()
+            job.uri = sink.finish()
         } catch (e: Exception) {
             sink.abort(); throw e
         }
@@ -288,6 +328,7 @@ object Downloader {
         val buf = ByteArray(64 * 1024)
         var last = 0L
         while (true) {
+            if (job.cancelled) throw IllegalStateException("Cancelled")
             val n = input.read(buf)
             if (n < 0) break
             sink.write(buf, 0, n)
@@ -330,10 +371,11 @@ object Downloader {
         fun write(b: ByteArray) = out.write(b)
         fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
 
-        fun finish() {
+        fun finish(): Uri {
             out.close()
             val v = ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }
             resolver.update(uri, v, null, null)
+            return uri
         }
 
         fun abort() {
@@ -352,10 +394,17 @@ object Downloader {
         lastNote = now
         try {
             val nm = ctx.getSystemService(NotificationManager::class.java)
+            if (final && (job.cancelled || !Prefs(ctx).bool("dl_notify"))) { nm.cancel(id); return }
+            val open = android.app.PendingIntent.getActivity(
+                ctx, 0, android.content.Intent(ctx, DownloadsActivity::class.java),
+                android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+            )
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "Downloads", NotificationManager.IMPORTANCE_LOW))
             val b = android.app.Notification.Builder(ctx, CHANNEL)
                 .setContentTitle(job.fileName.ifEmpty { job.item.name })
                 .setOnlyAlertOnce(true)
+                .setContentIntent(open)
+                .setAutoCancel(true)
             when {
                 !final -> b.setSmallIcon(android.R.drawable.stat_sys_download).setOngoing(true)
                     .setProgress(100, job.percent.coerceAtLeast(0), job.percent < 0)

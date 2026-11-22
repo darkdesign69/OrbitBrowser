@@ -46,6 +46,10 @@
             android:supportsPictureInPicture="true"
             android:theme="@style/AppTheme" />
         <activity
+            android:name=".DownloadsActivity"
+            android:exported="false"
+            android:label="Downloads" />
+        <activity
             android:name=".LibraryActivity"
             android:exported="false" />
     </application>

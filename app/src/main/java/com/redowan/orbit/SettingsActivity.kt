@@ -148,7 +148,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private val allPages = listOf(
         "general", "advanced", "site", "backup", "webcleaner", "download", "media", "memory",
-        "display", "layout", "menu", "tab", "composition", "fullscreen", "landscape", "floatbtn",
+        "display", "layout", "menu", "tab", "composition", "fullscreen",
         "webcontent", "gesture", "translator", "tts", "tvcast", "security", "incognito", "password",
         "cleardata", "dns"
     )
@@ -169,8 +169,6 @@ class SettingsActivity : AppCompatActivity() {
         "tab" -> "Tab"
         "composition" -> "Composition"
         "fullscreen" -> "Full screen and Toolbar"
-        "landscape" -> "Landscape mode"
-        "floatbtn" -> "Floating button"
         "webcontent" -> "Web content"
         "gesture" -> "Gesture"
         "translator" -> "Translator"
@@ -200,8 +198,6 @@ class SettingsActivity : AppCompatActivity() {
         "tab" -> tabRows()
         "composition" -> compositionRows()
         "fullscreen" -> fullscreenRows()
-        "landscape" -> landscapeRows()
-        "floatbtn" -> floatRows()
         "webcontent" -> webContentRows()
         "gesture" -> gestureRows()
         "translator" -> translatorRows()
@@ -255,20 +251,8 @@ class SettingsActivity : AppCompatActivity() {
             } catch (_: Exception) { toast("Open Android settings > Notifications") }
         },
         Gap,
-        act("Language", "Depends on system setting", { "System" }) {
-            try {
-                startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:$packageName")))
-            } catch (_: Exception) { toast("Open Android settings > Languages") }
-        },
-        act("Language resource (GitHub)") {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/darkdesign69/OrbitBrowser")))
-            } catch (_: Exception) { toast("No app can open this") }
-        },
-        Gap,
-        sw(K.KEYBOARD_START, "Keyboard activation on app startup", false),
+        sw(K.KEYBOARD_START, "Keyboard activation on app startup", false, "Opens the keyboard when Orbit starts on the start page."),
         sw(K.BACK_TWICE, "Back button twice to app exit", false),
-        Gap,
         sw(K.KEEP_TABS, "Restore tabs on launch", true)
     )
 
@@ -281,7 +265,7 @@ class SettingsActivity : AppCompatActivity() {
         sw(K.DESKTOP_ALL, "Request desktop site on all tabs", false),
         ch(K.UA, "User agent", listOf("Android", "Desktop", "iPhone"), 0),
         Gap,
-        sw("adv_dom_storage", "Allow site storage (DOM storage)", true, "Needed by many sites to keep you signed in."),
+        sw("adv_dom_storage", "Site storage (DOM storage)", true, "Needed by many sites to keep you signed in."),
         sw("adv_mixed", "Allow mixed content", true, "Loads http items on https pages.")
     )
 
@@ -291,27 +275,22 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.setStr(K.HOMEPAGE, it); adapter.notifyDataSetChanged()
             }
         },
-        ch(K.START_PAGE, "Start page", listOf("Last visited page", "Home page"), 0, "When starting the app"),
-        ch(K.NEW_TAB, "New tab", listOf("Home page", "Blank page"), 0, "When creating a new tab"),
-        Gap,
-        act("Permission") {
+        act("Permission", "Camera, microphone, location and notifications are set in Android.") {
             try {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             } catch (_: Exception) { toast("Open Android settings > Apps > Orbit") }
         },
         Gap,
         ch(K.ENGINE, "Search engine", Engines.names, 1),
-        ch(K.UA, "User agent", listOf("Android", "Desktop", "iPhone"), 0),
         Gap,
-        sw("open_link_app", "Open link with app", false),
         ch(K.LP_LINK, "Link (Long press)", listOf("Menu", "Open in new tab", "Copy link"), 0),
         ch(K.LP_IMAGE, "Image (Long press)", listOf("Menu", "Save image", "Open in new tab"), 0)
     )
 
     private fun backupRows(): List<Row> = listOf(
         Head(R.drawable.ic_folder, "Storage"),
-        act("Import") { backupIn.launch(arrayOf("application/json", "*/*")) },
-        act("Export") { backupOut.launch("orbit-backup.json") },
+        act("Import", "Restore settings, start page and bookmarks from a backup file.") { backupIn.launch(arrayOf("application/json", "*/*")) },
+        act("Export", "Save settings, start page and bookmarks to a file.") { backupOut.launch("orbit-backup.json") },
         Head(R.drawable.ic_bookmarks, "Bookmarks"),
         act("Import bookmarks (HTML)") { importHtml.launch(arrayOf("text/html", "*/*")) },
         act("Export bookmarks (HTML)") { exportHtml.launch("orbit-bookmarks.html") },
@@ -320,96 +299,59 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun webCleanerRows(): List<Row> = listOf(
         sw(K.ADBLOCK, "Ad blocker", true, "At least one filter must be active to block ads."),
-        sw("element_inspect", "Element inspection (more fine-grained blocking)", true, "This feature uses more memory."),
-        act("Ad filter", "", { "${AdBlocker.customCount()} custom domains" }) { filterLists() },
+        act("Ad filter", "Add filter lists from a web address or paste rules.", { "${AdBlocker.customCount()} custom domains" }) { filterLists() },
         sites("Ad whitelist", K.SITE_AD_OFF, "You can register sites where ads are allowed."),
-        Gap,
-        sw("block_area", "Block area", true, "Long press on the object you want to block and a menu will appear."),
         Gap,
         sw(K.OVERLAY, "Overlay blocker", false, "Hides big fixed banners and dialogs."),
         sites("Overlay Whitelist", K.SITE_OVERLAY_OFF, "You can register sites where overlays are allowed."),
         Gap,
         ch(K.POPUP, "Popup blocker", listOf("Not used", "Normal", "Block all"), 1,
-            "Block when other sites are opened (including advertising sites)"),
+            "Normal blocks popups that open without you tapping."),
         sites("Popup whitelist", K.SITE_POPUP_OFF, "You can register sites where popups are allowed."),
         Gap,
-        ch("block_app_exec", "Block app execution", listOf("Not blocked", "Always blocked"), 1,
-            "Block the site from running other apps."),
-        Gap,
-        Act("Blocked Links", { siteSummary(K.BLOCKED_LINKS) }, "") {
+        Act("Blocked Links", { siteSummary(K.BLOCKED_LINKS) }, "Domains that are never loaded.") {
             Ui.prompt(this, "Blocked Links", "one domain per line", prefs.str(K.BLOCKED_LINKS), multiline = true) { t ->
                 prefs.setStr(K.BLOCKED_LINKS, t)
                 AdBlocker.importList(this, t)
                 adapter.notifyDataSetChanged()
             }
         },
-        ch("lock_screen", "Lock screen", listOf("Not used", "Used"), 0),
-        Gap,
-        sw(K.IMAGES_OFF, "Blocked images", false, "Blocks images to save data; pages load faster."),
+        sw(K.IMAGES_OFF, "Block images", false, "Saves data; pages load faster."),
         sites("JavaScript blacklist", K.SITE_JS_OFF, "Sites where JavaScript is turned off."),
         sw(K.AMP_OFF, "Disable Google AMP", true, "Opens the original page instead.")
     )
 
     private fun downloadRows(): List<Row> = listOf(
-        ch("dl_manager", "Download manager", listOf("Default", "Other apps"), 0),
-        act("Download location", "", { "Device/Download/Orbit" }),
+        act("Downloads", "Open the list of downloads.") { startActivity(Intent(this, DownloadsActivity::class.java)) },
+        act("Download location", "", { "Downloads/Orbit" }),
         Gap,
-        ch("dl_fast", "Fast download", listOf("Off", "x2", "x4", "x8", "x10"), 4, "Some sites may not be supported."),
-        optNum("dl_retries", "Number of retries", "None", listOf(1, 3, 5, 10), 4, "Number of retries in case of connection failure"),
-        optNum("dl_concurrent", "Concurrent download", "Unlimited", listOf(1, 2, 3, 5), 0,
-            "If the number of downloads exceeds the limit, it will be queued.\nDownloading too many files at the same time can slow device and cause problems."),
-        ch("dl_bg_timeout", "Background state timeout", listOf("Unlimited", "30 minutes", "1 hour", "2 hours", "6 hours"), 3,
-            "If the time limit is exceeded while the app is in the background, downloads will be paused to save battery.\nThe timer is released when the app goes to the foreground."),
+        sw("dl_ask", "Ask before downloading", false, "Shows the file name and asks first."),
+        sw("dl_wifi", "Wi-Fi only", false, "Don't use mobile data for downloads."),
         sw("dl_notify", "Download completion notification", true),
         Gap,
-        Note("Due to YouTube policy, YouTube videos can not be downloaded.")
+        Note("Files are downloaded by Android's download manager, so they keep going in the background. " +
+            "Due to YouTube policy, YouTube videos can not be downloaded.")
     )
 
     private fun mediaRows(): List<Row> = listOf(
         sw(K.MEDIA_DETECT, "Video manager button", true,
-            "Floating button. You can move the button by dragging it. When video is detected, a button will appear on the screen. Some sites need to play the video before the video is detected. YouTube is not supported."),
-        col("media_btn_color", "Button color"),
+            "When a page plays video, a button appears that you can drag. Tap it to play or save the video, stream or subtitles. " +
+                "Some sites need to start playing before the video is found."),
         Gap,
-        sw("bg_play", "Background playback", false, "Some sites may not be supported."),
-        Note("Due to YouTube policy, YouTube background playback is not supported."),
-        Gap,
-        Head(R.drawable.ic_play_arrow, "YouTube"),
-        ch("yt_button", "YouTube manager button", listOf("Not used", "Floating button"), 1, "You can move the button by dragging it."),
-        col("yt_btn_color", "Button color"),
-        Gap,
-        sw("yt_autoplay", "YouTube autoplay", true),
-        sw("yt_unmute", "Unmute YouTube", true)
+        Note("Due to YouTube policy, YouTube videos can not be downloaded.")
     )
 
     private fun memoryRows(): List<Row> = listOf(
-        Head(R.drawable.ic_memo, "Page"),
-        sw("mem_back_norefresh", "Go back without refresh", true, "Some sites may not be supported.\nThis feature uses more memory."),
-        optNum("mem_page_limit", "Memory limit", "Unlimited", listOf(1, 3, 5, 10), 3,
-            "If you exceed the limit, memory is automatically released starting with the oldest pages.\nIf you have too many pages open, your browser may be slow."),
-        Head(R.drawable.ic_copy, "Tab"),
-        optNum("tab_open_limit", "Open limit", "Unlimited", listOf(5, 10, 20, 50), 0,
-            "If too many tabs are open, the browser may slow down."),
-        optNum("mem_tab_limit", "Memory limit", "Unlimited", listOf(1, 3, 5, 10), 3,
-            "If you exceed the limit, memory is automatically released starting with the oldest tabs.\nIf too many tabs are open, the browser may slow down."),
-        sites("Memory release prevention list", K.MEM_KEEP, ""),
+        ch("mem_tab_limit", "Tabs kept in memory", listOf("Unlimited", "3", "5", "10"), 0,
+            "When more tabs are open than the limit, the ones farthest from the current tab are released and reload when you open them. Incognito tabs are never released.",
+            values = listOf(0, 3, 5, 10)),
         Gap,
-        ch("mem_retention", "Memory retention period", listOf("1 day", "2 day", "7 day", "Unlimited"), 1,
-            "If you keep memory too long, your browser may become slower.")
+        Note("When Android is low on memory, Orbit also releases background tabs on its own.")
     )
 
     private fun displayRows(): List<Row> = listOf(
         ch(K.THEME, "UI", listOf("System", "Light", "Dark"), 2) { OrbitApp.applyNightMode(prefs.int(K.THEME)) },
         sw(K.PAGE_DARK, "Web page dark mode", false, "Darkens page colours, keeps images normal."),
-        Gap,
-        sw("dark_image", "Dark image", true, "Applies only when the webpage is in dark mode."),
-        ch("img_bright", "Image brightness", listOf("50%", "60%", "70%", "80%", "100%"), 2),
-        Gap,
-        ch("header_mode", "Header", listOf("System", "Custom"), 1),
-        col("header_color", "Header color", 0xFF000000.toInt()),
-        sw("dark_home", "Dark mode Home", true, "When you set a wallpaper, your homepage will always be in dark mode."),
-        Gap,
-        ch(K.SCREEN_FILTER, "Screen filter", listOf("Not used", "Warm", "Dim"), 0),
-        col(K.FILTER_COLOR, "Filter color", 0xFF222222.toInt()),
         Gap,
         ch(K.BRIGHTNESS, "Brightness", listOf("System", "Low", "Medium", "High"), 0, "Depends on system setting"),
         ch(K.SCREEN_TIMEOUT, "Screen timeout", listOf("System", "Always on"), 0, "Depends on system setting"),
@@ -419,64 +361,33 @@ class SettingsActivity : AppCompatActivity() {
     private fun layoutRows(): List<Row> = listOf(
         sw(K.ADDR_BOTTOM, "Address bar at bottom", false, "Moves the address bar and tab bar to the bottom."),
         sw(K.NAV_BAR, "Bottom bar", false, "Back, forward, home, bookmarks, tabs, menu"),
-        sw(K.SCROLL_HIDE, "Hide bars while scrolling", false),
         sw(K.TAB_BAR, "Show tab bar", true)
     )
 
     private fun menuRows(): List<Row> = listOf(
         ch(K.MENU_STYLE, "Menu style", listOf("Popup", "Bottom sheet"), 0, "How the three-dot menu opens."),
         Gap,
-        Note("The popup menu has quick buttons on top (reload, ad blocker, tabs, settings) and a bottom row with Incognito tab, Desktop site and DNS.")
+        Note("The popup menu has quick buttons on top (reload, ad blocker, bookmark, bookmarks, settings) and Incognito, Desktop and DNS at the bottom.")
     )
 
     private fun tabRows(): List<Row> = listOf(
         ch("tab_add_pos", "Where to add tabs", listOf("Next to the current tab", "End of the list"), 0) {
             prefs.setBool(K.TAB_NEXT, prefs.int("tab_add_pos") == 0)
         },
-        sw("tab_autogroup", "Automatic grouping", true, "They are automatically grouped when a new window opens on the site."),
-        Gap,
-        ch("tab_bar_show", "Show tab bar", listOf("Hidden", "Below top bar"), 1) {
-            prefs.setBool(K.TAB_BAR, prefs.int("tab_bar_show") == 1)
-        },
         ch(K.TAB_VIEW, "Tab list style", listOf("Grid", "List", "Small list"), 0),
-        ch("swipe_up_tabbar", "Swipe up tab bar", listOf("Nothing", "Tab list"), 1),
-        ch("swipe_down_tabbar", "Swipe down tab bar", listOf("Nothing", "Close tab"), 1),
         Gap,
-        sw("tab_indicator", "Tab indicator", true, "Show tab position and number of tabs on tab button"),
-        sw("tab_loop", "Tab loop", true, "Switch between first and last tab"),
-        sw("tap_anim", "Use tap animation", true),
-        Gap,
-        ch("undelete", "Undelete", listOf("Nothing", "Web page", "Tab list", "Web page, Tab list"), 3),
-        sw("tab_keyboard", "Activate keyboard when adding tab", false),
-        sw(K.HOME_CLOSE_ALL, "Click on the homepage icon to close all tabs", false),
-        Gap,
-        sw("last_page_notify", "Last page notification", false,
-            "If you click the back button on the last page of the tab, it is notified that it is the last page of the tab."),
-        sw("swipe_close_last", "Swipe the page from the last page to close the tab", true),
-        ch(K.BACK_LAST, "Previous button behavior on last page", listOf("Close tab", "Do nothing", "Exit app"), 0)
+        sw(K.KEEP_TABS, "Restore tabs on launch", true)
     )
 
     private fun compositionRows(): List<Row> = listOf(
         Nav(R.drawable.ic_fullscreen, "Full screen and Toolbar", "fullscreen"),
-        Nav(R.drawable.ic_desktop, "Landscape mode", "landscape"),
-        Nav(R.drawable.ic_add, "Floating button", "floatbtn"),
         Gap,
         ch(K.ADDR_LABEL, "Address bar label", listOf("Domain", "Title", "Full address"), 0),
-        multi("suggest_sources", "Search suggestions", listOf("Google", "Recent searches", "History", "Bookmark"), 15),
-        sw("autocomplete", "Auto complete", true),
-        Gap,
-        optNum("recent_max", "Recent searches", "Unlimited", listOf(10, 20, 50), 0),
-        sw("recent_incognito", "Save recent searches in incognito mode", false),
-        Gap,
-        sw("onehand", "One-handed mode button", false, "You can move the button by dragging it."),
-        col("onehand_color", "Button color", 0xFF2E3A8C.toInt()),
-        ch("onehand_size", "Area size", listOf("Small", "Medium", "Large"), 1),
         Gap,
         sw(K.PULL_REFRESH, "Pull to refresh", true),
         sw(K.BACK_TOP, "Back to top button", true),
         ch(K.SHOW_SCROLLBAR, "Show scroll bar", listOf("Don't show", "Show"), 0),
-        sw(K.VOL_SCROLL, "Scroll web pages with volume keys", false),
-        sw("scroll_anim", "Use scroll animation", false)
+        sw(K.VOL_SCROLL, "Scroll web pages with volume keys", false)
     )
 
     private fun fullscreenRows(): List<Row> = listOf(
@@ -484,38 +395,20 @@ class SettingsActivity : AppCompatActivity() {
         sw(K.SCROLL_HIDE, "Hide bars while scrolling", false)
     )
 
-    private fun landscapeRows(): List<Row> = listOf(
-        ch(K.ROTATION, "Screen rotation", listOf("Auto", "Portrait", "Landscape"), 0),
-        sw("land_hide_tabbar", "Hide tab bar in landscape", false)
-    )
-
-    private fun floatRows(): List<Row> = listOf(
-        sw("float_btn", "Floating button", false, "You can move the button by dragging it."),
-        ch("float_action", "Button action", listOf("Back to top", "Tab list", "New tab"), 0),
-        col("float_color", "Button color")
-    )
-
     private fun webContentRows(): List<Row> = listOf(
         ch(K.TEXT_ZOOM, "Text size", listOf("80%", "90%", "100%", "115%", "130%", "150%"), 100,
             values = listOf(80, 90, 100, 115, 130, 150)),
         sw("allow_zoom", "Allow pinch zoom", true),
-        sw(K.DESKTOP_ALL, "Request desktop site on all tabs", false),
-        sw(K.IMAGES_OFF, "Block images", false, "Saves data; pages load faster."),
-        sw(K.PAGE_DARK, "Web page dark mode", false)
+        sw(K.IMAGES_OFF, "Block images", false, "Saves data; pages load faster.")
     )
 
     private fun gestureRows(): List<Row> = listOf(
-        sw("swipe_nav", "Swipe navigation", true, "Swipe from the screen edge to go back or forward."),
         sw(K.PULL_REFRESH, "Pull to refresh", true),
-        sw(K.VOL_SCROLL, "Scroll web pages with volume keys", false),
-        ch("double_tap", "Double tap on page", listOf("Nothing", "Back to top"), 0)
+        sw(K.VOL_SCROLL, "Scroll web pages with volume keys", false)
     )
 
     private fun translatorRows(): List<Row> = listOf(
-        ch("tr_engine", "Translator", listOf("Google"), 0),
-        ch(K.TR_LANG, "Translate into", Langs.labels, 0, "System follows your phone language."),
-        sw("tr_auto", "Automatic translation", false),
-        sites("Translation blacklist", K.TR_BLACK, "Sites that are never translated automatically.")
+        ch(K.TR_LANG, "Translate into", Langs.labels, 0, "System follows your phone language. Used by Translate in the menu.")
     )
 
     private fun ttsRows(): List<Row> = listOf(
@@ -539,17 +432,12 @@ class SettingsActivity : AppCompatActivity() {
     private fun securityRows(): List<Row> = listOf(
         sw(K.HTTPS_FIRST, "HTTPS first", true, "Tries https:// before http://"),
         sw(K.SSL_BLOCK, "Block pages with certificate errors", true),
-        sw(K.SAFE_BROWSING, "Safe Browsing", true, "Warns about dangerous sites."),
-        Gap,
-        sw(K.COOKIES, "Cookies", true),
-        sw(K.THIRD_COOKIES, "Third-party cookies", true),
-        sw(K.SAVE_HISTORY, "Save history", true)
+        sw(K.SAFE_BROWSING, "Safe Browsing", true, "Warns about dangerous sites.")
     )
 
     private fun incognitoRows(): List<Row> = listOf(
         sw(K.INCOG_SECURE, "Hide incognito in recent apps", true),
-        sw(K.KEY_SECURE, "Incognito keyboard privacy", true, "Asks the keyboard not to learn what you type."),
-        sw("incog_external", "Open links from other apps in incognito", false)
+        sw(K.KEY_SECURE, "Incognito keyboard privacy", true, "Asks the keyboard not to learn what you type.")
     )
 
     private fun passwordRows(): List<Row> = listOf(
@@ -560,8 +448,7 @@ class SettingsActivity : AppCompatActivity() {
                 toast("Set a screen lock in Android settings first")
                 adapter.notifyDataSetChanged()
             }
-        },
-        sw("incog_lock", "Lock incognito tabs", false)
+        }
     )
 
     private fun clearDataRows(): List<Row> = listOf(

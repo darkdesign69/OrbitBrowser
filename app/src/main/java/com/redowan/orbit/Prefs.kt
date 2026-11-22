@@ -235,7 +235,11 @@ class Prefs(context: Context) {
             K.HOME_CLOSE_ALL to false,
             "allow_zoom" to true,
             "adv_mixed" to true,
-            "adv_dom_storage" to true
+            "adv_dom_storage" to true,
+            "dl_ask" to false,
+            "dl_wifi" to false,
+            "dl_notify" to true,
+            "mem_tab_limit" to 0
         )
     }
 }

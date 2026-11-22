@@ -41,3 +41,7 @@ Secure DNS is done through Android's Private DNS (WebView can't set DoH per app;
 
 ## Build
 Push `orbit-full.zip` to the repo root and run **Build APK** in GitHub Actions, or `gradle assembleDebug`.
+
+
+## Settings
+Settings follow Soul Browser's page layout. Only options that actually work are shown; see SETTINGS_STATUS.md.

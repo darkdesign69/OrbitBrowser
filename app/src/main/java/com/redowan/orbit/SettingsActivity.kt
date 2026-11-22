@@ -95,6 +95,7 @@ class SettingsActivity : AppCompatActivity() {
 
         Header("Toolbars and tabs"),
         Sw(K.ADDR_BOTTOM, "Address bar at bottom"),
+        Sw(K.NAV_BAR, "Bottom bar", "Back, forward, home, bookmarks, tabs, menu"),
         Sw(K.SCROLL_HIDE, "Hide bars while scrolling"),
         Sw(K.TAB_BAR, "Show tab bar"),
         Sw(K.TAB_NEXT, "Open new tab next to current tab"),
@@ -102,6 +103,10 @@ class SettingsActivity : AppCompatActivity() {
         Sw(K.PULL_REFRESH, "Pull down to refresh"),
         Sw(K.BACK_TOP, "Back-to-top button"),
         Sw(K.VOL_SCROLL, "Volume keys scroll the page"),
+
+        Header("Video and downloads"),
+        Sw(K.MEDIA_DETECT, "Video download button", "Floating button when a page has video, audio or subtitles"),
+        Act("Saved in", { "Downloads/Orbit" }) {},
 
         Header("Ads and blocking"),
         Sw(K.ADBLOCK, "Ad blocker", "Blocks ad and tracker hosts"),

@@ -6,6 +6,13 @@ pills, speed-dial start page, slide-up sheets). No Soul code, icons, strings or 
 icons are Material Design icons (Apache-2.0).
 
 ## Built
+- **Video download button** (like Soul's floating media button): while a page loads, Orbit watches for video,
+  HLS streams, audio and subtitles (.mp4 .webm .m3u8 .mpd .mp3 .vtt .srt .ass ...). A draggable round button
+  appears; tap it for pop-out player / full-screen player / download list. Downloads go to Downloads/Orbit,
+  HLS streams are joined (AES-128 supported, quality picker), subtitles saved next to them.
+- **Built-in player** (Media3): HLS, DASH, MP4/WebM, subtitles (VTT, SRT, ASS), speed menu,
+  picture-in-picture, swipe left side = brightness, right side = volume
+- Soul-style layout: home | lock + site name | tab count | menu on top, tab pills below, bottom bar optional
 - Top **or bottom** address bar, bottom navigation bar, outlined pill tab bar, hide-on-scroll
 - Start page with icon grid (speed dial), folders, add / edit / move / delete
 - Tabs: normal + incognito, grid / list / small-list switcher, close others / all, new tab next to current
@@ -23,7 +30,7 @@ icons are Material Design icons (Apache-2.0).
 
 ## Not built yet
 Bookmark folders, tab groups by overlapping, one-handed / mini mode, floating button, search suggestions,
-QR code, search by image, built-in video / music player, widgets, auto-translate, 24 languages.
+QR code, search by image, music player, widgets, DRM video, DASH download, auto-translate, 24 languages.
 Secure DNS is done through Android's Private DNS (WebView can't set DoH per app; GeckoView could).
 
 ## Build

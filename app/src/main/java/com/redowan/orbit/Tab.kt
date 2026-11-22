@@ -2,6 +2,7 @@ package com.redowan.orbit
 
 import android.graphics.Bitmap
 import android.webkit.WebView
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * One browser tab. The WebView is created lazily ([web] is null for a tab that only shows
@@ -17,6 +18,9 @@ class Tab(var url: String?, val incognito: Boolean = false) {
     var loading: Boolean = false
     var progress: Int = 0
     var readerOn: Boolean = false
+
+    /** Media files seen on this page (video, streams, audio, subtitles). Written from the network thread. */
+    val media = CopyOnWriteArrayList<MediaItem>()
 
     /** Host of the page being loaded; read from the IO thread by the ad blocker. */
     @Volatile

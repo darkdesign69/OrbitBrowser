@@ -32,6 +32,10 @@ object K {
     const val SSL_BLOCK = "ssl_block"
     const val OVERLAY = "overlay_block"
     const val AMP_OFF = "amp_off"
+    const val NAV_BAR = "nav_bar"
+    const val MEDIA_DETECT = "media_detect"
+    const val MEDIA_X = "media_x"
+    const val MEDIA_Y = "media_y"
     const val SAVE_HISTORY = "save_history"
     const val KEY_SECURE = "key_secure"
     const val INCOG_SECURE = "incog_secure"
@@ -129,7 +133,7 @@ class Prefs(context: Context) {
     companion object {
         val DEFAULTS: Map<String, Any> = mapOf(
             K.ADDR_BOTTOM to false,
-            K.SCROLL_HIDE to true,
+            K.SCROLL_HIDE to false,
             K.TAB_BAR to true,
             K.TAB_NEXT to true,
             K.TAB_VIEW to 0,
@@ -149,6 +153,10 @@ class Prefs(context: Context) {
             K.SSL_BLOCK to true,
             K.OVERLAY to false,
             K.AMP_OFF to true,
+            K.NAV_BAR to false,
+            K.MEDIA_DETECT to true,
+            K.MEDIA_X to 1000,
+            K.MEDIA_Y to 620,
             K.SAVE_HISTORY to true,
             K.KEY_SECURE to true,
             K.INCOG_SECURE to true,

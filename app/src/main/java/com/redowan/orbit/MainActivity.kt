@@ -7,7 +7,11 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
+import android.view.MotionEvent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -23,6 +27,7 @@ import android.print.PrintManager
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -62,6 +67,7 @@ import org.json.JSONObject
 import org.json.JSONTokener
 import java.io.ByteArrayInputStream
 import java.util.Locale
+import kotlin.math.hypot
 
 /**
  * The browser screen: tab bar, address bar, page area (WebView or start page) and bottom bar.
@@ -84,8 +90,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tabStrip: RecyclerView
     private lateinit var urlField: EditText
     private lateinit var lockIcon: ImageView
-    private lateinit var btnStar: ImageButton
-    private lateinit var btnReader: ImageButton
+    private lateinit var topHome: ImageButton
+    private lateinit var topTabs: View
+    private lateinit var topTabCount: TextView
+    private lateinit var topMenu: ImageButton
+    private lateinit var fabMedia: ImageButton
     private lateinit var btnReload: ImageButton
     private lateinit var btnBack: ImageButton
     private lateinit var btnForward: ImageButton
@@ -104,6 +113,12 @@ class MainActivity : AppCompatActivity() {
     private val defaultUa by lazy { WebSettings.getDefaultUserAgent(this) }
     private val upgraded = HashMap<Tab, String>()
     private var barsShown = true
+    private var barAcc = 0
+    private var lastToggle = 0L
+    private val ui = Handler(Looper.getMainLooper())
+    private val mediaTick = Runnable { updateMediaFab() }
+
+    private val notifPerm = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     // full-screen video
     private var customView: View? = null
@@ -242,8 +257,11 @@ class MainActivity : AppCompatActivity() {
         tabStrip = findViewById(R.id.tabStrip)
         urlField = findViewById(R.id.urlField)
         lockIcon = findViewById(R.id.lockIcon)
-        btnStar = findViewById(R.id.btnStar)
-        btnReader = findViewById(R.id.btnReader)
+        topHome = findViewById(R.id.topHome)
+        topTabs = findViewById(R.id.topTabs)
+        topTabCount = findViewById(R.id.topTabCount)
+        topMenu = findViewById(R.id.topMenu)
+        fabMedia = findViewById(R.id.fabMedia)
         btnReload = findViewById(R.id.btnReload)
         btnBack = findViewById(R.id.btnBack)
         btnForward = findViewById(R.id.btnForward)
@@ -271,20 +289,19 @@ class MainActivity : AppCompatActivity() {
             }
             go
         }
-        urlField.setOnFocusChangeListener { _, focus -> if (!focus) updateAddress() }
-
-        btnStar.setOnClickListener {
-            val t = cur
-            val url = t.url
-            if (t.home || url.isNullOrEmpty()) return@setOnClickListener
-            if (store.isBookmarked(url)) {
-                store.removeBookmark(url); toast("Bookmark removed")
-            } else {
-                store.addBookmark(Entry(t.label(), url)); toast("Bookmarked")
-            }
-            updateAddress()
+        urlField.setOnFocusChangeListener { _, focus ->
+            if (focus) {
+                urlField.gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                urlField.setText(if (cur.home) "" else (cur.url ?: ""))
+                urlField.selectAll()
+            } else updateAddress()
         }
-        btnReader.setOnClickListener { toggleReader() }
+
+        topHome.setOnClickListener { goHome() }
+        topMenu.setOnClickListener { showMenu() }
+        topTabs.setOnClickListener { TabSwitcher(this).show() }
+        topTabs.setOnLongClickListener { tabsQuickMenu(); true }
+        setupMediaFab()
         btnReload.setOnClickListener {
             val t = cur
             when {
@@ -303,16 +320,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnBookmarks).setOnClickListener { openLibrary("bookmarks") }
         val tabsBtn = findViewById<View>(R.id.btnTabs)
         tabsBtn.setOnClickListener { TabSwitcher(this).show() }
-        tabsBtn.setOnLongClickListener {
-            Ui.listSheet(
-                this, null, listOf(
-                    "New tab" to { newTab(null) },
-                    "New incognito tab" to { newTab(null, true) },
-                    "Close this tab" to { closeTab(current) }
-                )
-            )
-            true
-        }
+        tabsBtn.setOnLongClickListener { tabsQuickMenu(); true }
         findViewById<View>(R.id.btnMenu).setOnClickListener { showMenu() }
 
         fabTop.setOnClickListener { cur.web?.scrollTo(0, 0); fabTop.visibility = View.GONE }
@@ -343,14 +351,16 @@ class MainActivity : AppCompatActivity() {
             root.addView(tabBarRow, i)
             root.addView(addrRow, i + 1)
         } else {
-            root.addView(tabBarRow, 0)
-            root.addView(addrRow, 1)
+            root.addView(addrRow, 0)
+            root.addView(tabBarRow, 1)
         }
+        navRow.visibility = if (prefs.bool(K.NAV_BAR)) View.VISIBLE else View.GONE
         if (!prefs.scrollHide) showBars()
 
         tabs.forEach { applyWebSettings(it) }
         updateSecureFlag()
         updateAddress()
+        updateMediaFab()
     }
 
     private fun updateSecureFlag() {
@@ -442,6 +452,7 @@ class MainActivity : AppCompatActivity() {
     private fun refreshTabs() {
         stripAdapter.notifyDataSetChanged()
         tabCount.text = tabs.size.toString()
+        topTabCount.text = tabs.size.toString()
         if (current in tabs.indices) tabStrip.scrollToPosition(current)
     }
 
@@ -491,6 +502,7 @@ class MainActivity : AppCompatActivity() {
         updateAddress()
         updateNav()
         refreshTabs()
+        updateMediaFab()
     }
 
     // ------------------------------------------------------------------ navigation
@@ -554,12 +566,15 @@ class MainActivity : AppCompatActivity() {
     private fun updateAddress() {
         if (tabs.isEmpty()) return
         val t = cur
-        if (!urlField.hasFocus()) urlField.setText(if (t.home) "" else (t.url ?: ""))
+        if (!urlField.hasFocus()) {
+            // like Soul: show only the site name, centred, until the field is tapped
+            urlField.gravity = Gravity.CENTER
+            val host = hostOf(t.url).removePrefix("www.")
+            urlField.setText(if (t.home) "" else host.ifEmpty { t.url ?: "" })
+        }
         val https = t.url?.startsWith("https://") == true && !t.home
         lockIcon.visibility = if (https) View.VISIBLE else View.GONE
-        btnStar.setImageResource(if (store.isBookmarked(t.url)) R.drawable.ic_star else R.drawable.ic_star_border)
         btnReload.setImageResource(if (t.loading && !t.home) R.drawable.ic_stop else R.drawable.ic_refresh)
-        btnReader.alpha = if (t.home) 0.35f else if (t.readerOn) 1f else 0.7f
         if (t.loading && t.progress < 100 && !t.home) {
             progress.visibility = View.VISIBLE
             progress.progress = t.progress
@@ -577,12 +592,15 @@ class MainActivity : AppCompatActivity() {
     private fun hideBars() {
         if (!barsShown) return
         barsShown = false
+        lastToggle = SystemClock.uptimeMillis()
         tabBarRow.visibility = View.GONE
         addrRow.visibility = View.GONE
     }
 
     private fun showBars() {
+        if (barsShown && addrRow.visibility == View.VISIBLE) return
         barsShown = true
+        lastToggle = SystemClock.uptimeMillis()
         tabBarRow.visibility = if (prefs.showTabBar) View.VISIBLE else View.GONE
         addrRow.visibility = View.VISIBLE
     }
@@ -591,10 +609,18 @@ class MainActivity : AppCompatActivity() {
         if (tab !== cur) return
         val dy = y - oldY
         if (prefs.scrollHide) {
-            if (dy > 24 && y > 200) hideBars() else if (dy < -24) showBars()
+            // Resizing the page while it scrolls makes it jump, so: ignore the scroll events
+            // right after a toggle, and only toggle after a clear, sustained movement.
+            if (y <= 0) { barAcc = 0; showBars() }
+            else if (SystemClock.uptimeMillis() - lastToggle > 450) {
+                if (dy * barAcc < 0) barAcc = 0
+                barAcc += dy
+                if (barAcc > dp(120) && barsShown) { barAcc = 0; hideBars() }
+                else if (barAcc < -dp(60) && !barsShown) { barAcc = 0; showBars() }
+            }
         }
-        if (prefs.backTop && y > 600 && dy < 0) fabTop.visibility = View.VISIBLE
-        else if (y <= 600 || dy > 0) fabTop.visibility = View.GONE
+        if (prefs.backTop && y > 600 && dy < -4) fabTop.visibility = View.VISIBLE
+        else if (y <= 600 || dy > 4) fabTop.visibility = View.GONE
     }
 
     // ------------------------------------------------------------------ WebView
@@ -654,6 +680,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
+            if (prefs.bool(K.MEDIA_DETECT) && !AdBlocker.isBlocked(req.url.host)) {
+                val u = req.url.toString()
+                MediaDetector.classify(u)?.let { (kind, ext) ->
+                    val h = req.requestHeaders
+                    addMedia(tab, MediaItem(u, kind, ext, h["Referer"] ?: tab.url, h["Origin"], h["User-Agent"]))
+                }
+            }
             if (prefs.adBlock && !req.isForMainFrame && !prefs.siteHas(K.SITE_AD_OFF, tab.host) &&
                 AdBlocker.isBlocked(req.url.host)
             ) {
@@ -666,6 +699,7 @@ class MainActivity : AppCompatActivity() {
             tab.loading = true
             tab.progress = 0
             tab.home = false
+            if (!url.isNullOrEmpty() && url != tab.url) { tab.media.clear(); ui.post(mediaTick) }
             if (!url.isNullOrEmpty() && !url.startsWith("data:")) {
                 tab.url = url
                 tab.host = hostOf(url)
@@ -686,6 +720,10 @@ class MainActivity : AppCompatActivity() {
                 store.addHistory(Entry(tab.title, tab.url!!))
             }
             injectPageDark(view)
+            if (prefs.bool(K.MEDIA_DETECT)) {
+                view.postDelayed({ scanMedia(tab) }, 800)
+                view.postDelayed({ scanMedia(tab) }, 3500)
+            }
             if (prefs.bool(K.OVERLAY)) view.postDelayed({ view.evaluateJavascript(OVERLAY_JS, null) }, 1200)
             if (tab === cur) {
                 webHolder.isRefreshing = false
@@ -1018,7 +1056,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMenu() {
         val t = cur
+        val starred = store.isBookmarked(t.url)
         val items = listOf(
+            MenuItem(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) cur.web?.goBack() },
+            MenuItem(R.drawable.ic_forward, "Forward") { if (cur.web?.canGoForward() == true) cur.web?.goForward() },
+            MenuItem(R.drawable.ic_refresh, "Reload") { if (cur.home) dialAdapter.reload() else cur.web?.reload() },
+            MenuItem(if (starred) R.drawable.ic_star else R.drawable.ic_star_border, if (starred) "Bookmarked" else "Bookmark", needPage { toggleBookmark(it) }),
+
             MenuItem(R.drawable.ic_add, "New tab") { newTab(null) },
             MenuItem(R.drawable.ic_incognito, "Incognito tab") { newTab(null, true) },
             MenuItem(R.drawable.ic_bookmarks, "Bookmarks") { openLibrary("bookmarks") },
@@ -1055,6 +1099,10 @@ class MainActivity : AppCompatActivity() {
                 tb.web?.evaluateJavascript(OVERLAY_JS) { n -> toast("Removed ${n ?: "0"} overlay(s)") }
             }),
 
+            MenuItem(R.drawable.ic_reader, if (t.readerOn) "Exit reader" else "Reader mode", needPage { toggleReader() }),
+            MenuItem(R.drawable.ic_download, "Page media", {
+                if (cur.media.isEmpty()) toast("No media found on this page yet") else MediaUi.showSheet(this, cur)
+            }),
             MenuItem(R.drawable.ic_add, "Add to start page", needPage { tb ->
                 val d = store.dial()
                 d.add(Dial(tb.label().take(24), tb.url))
@@ -1128,6 +1176,177 @@ class MainActivity : AppCompatActivity() {
                     AdBlocker.importList(this, host); toast("Blocked $host")
                 }
             )
+        )
+    }
+
+
+    // ------------------------------------------------------------------ bookmarks, quick tab menu
+
+    private fun toggleBookmark(t: Tab) {
+        val url = t.url
+        if (t.home || url.isNullOrEmpty()) return
+        if (store.isBookmarked(url)) { store.removeBookmark(url); toast("Bookmark removed") }
+        else { store.addBookmark(Entry(t.label(), url)); toast("Bookmarked") }
+    }
+
+    private fun tabsQuickMenu() {
+        Ui.listSheet(
+            this, null, listOf(
+                "New tab" to { newTab(null) },
+                "New incognito tab" to { newTab(null, true) },
+                "Close this tab" to { closeTab(current) }
+            )
+        )
+    }
+
+    // ------------------------------------------------------------------ media detection (floating button)
+
+    fun userAgent(): String = if (cur.desktop || prefs.desktopAll) desktopUa() else defaultUa
+
+    fun requestNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    /** Called from the network thread when a request looks like media. */
+    private fun addMedia(tab: Tab, item: MediaItem) {
+        if (tab.media.any { it.url == item.url }) return
+        tab.media.add(item)
+        if (tab.media.size > 80) tab.media.removeAt(0)
+        ui.removeCallbacks(mediaTick)
+        ui.postDelayed(mediaTick, 250)
+    }
+
+    /** Looks for <video>, <audio>, <source> and <track> addresses inside the page itself. */
+    private fun scanMedia(tab: Tab) {
+        val w = tab.web ?: return
+        w.evaluateJavascript(
+            "(function(){var o=[];document.querySelectorAll('video,audio,source,track').forEach(function(e){" +
+                "var u=e.currentSrc||e.src||e.getAttribute('src');if(u&&/^https?:/i.test(u))o.push([e.tagName,u])});" +
+                "return JSON.stringify(o)})()"
+        ) { raw ->
+            try {
+                val s = JSONTokener(raw).nextValue() as? String ?: return@evaluateJavascript
+                val arr = org.json.JSONArray(s)
+                for (i in 0 until arr.length()) {
+                    val pair = arr.getJSONArray(i)
+                    val tag = pair.getString(0)
+                    val u = pair.getString(1)
+                    val known = MediaDetector.classify(u)
+                    val item = when {
+                        known != null -> MediaItem(u, known.first, known.second, tab.url, null, null)
+                        tag == "TRACK" -> MediaItem(u, MediaKind.SUB, "vtt", tab.url, null, null)
+                        tag == "AUDIO" -> MediaItem(u, MediaKind.AUDIO, "mp3", tab.url, null, null)
+                        else -> MediaItem(u, MediaKind.VIDEO, "mp4", tab.url, null, null)
+                    }
+                    addMedia(tab, item)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun updateMediaFab() {
+        if (!::fabMedia.isInitialized || tabs.isEmpty()) return
+        val show = prefs.bool(K.MEDIA_DETECT) && !cur.home && cur.media.isNotEmpty()
+        if (show) {
+            if (fabMedia.visibility != View.VISIBLE) {
+                fabMedia.scaleX = 0f
+                fabMedia.scaleY = 0f
+                fabMedia.visibility = View.VISIBLE
+                fabMedia.post {
+                    placeMediaFab()
+                    fabMedia.animate().scaleX(1f).scaleY(1f).setDuration(180).start()
+                }
+            }
+        } else if (fabMedia.visibility == View.VISIBLE) {
+            fabMedia.animate().scaleX(0f).scaleY(0f).setDuration(140).withEndAction {
+                fabMedia.visibility = View.GONE
+            }.start()
+        }
+    }
+
+    private fun placeMediaFab() {
+        val parent = fabMedia.parent as? View ?: return
+        if (parent.width <= 0) { fabMedia.post { placeMediaFab() }; return }
+        val fx = prefs.int(K.MEDIA_X) / 1000f
+        val fy = prefs.int(K.MEDIA_Y) / 1000f
+        fabMedia.x = (parent.width - fabMedia.width) * fx
+        fabMedia.y = (parent.height - fabMedia.height) * fy
+    }
+
+    /** Round button you can drag anywhere; tap opens the small action panel. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun setupMediaFab() {
+        var dX = 0f; var dY = 0f; var downX = 0f; var downY = 0f; var moved = false
+        fabMedia.setOnTouchListener { v, e ->
+            val parent = v.parent as View
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    dX = v.x - e.rawX; dY = v.y - e.rawY; downX = e.rawX; downY = e.rawY; moved = false
+                    v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(80).start()
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!moved && hypot(e.rawX - downX, e.rawY - downY) > dp(8)) moved = true
+                    if (moved) {
+                        v.x = (e.rawX + dX).coerceIn(0f, (parent.width - v.width).toFloat())
+                        v.y = (e.rawY + dY).coerceIn(0f, (parent.height - v.height).toFloat())
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
+                    if (e.actionMasked == MotionEvent.ACTION_UP) {
+                        if (moved) {
+                            val rx = (parent.width - v.width).coerceAtLeast(1)
+                            val ry = (parent.height - v.height).coerceAtLeast(1)
+                            prefs.setInt(K.MEDIA_X, (v.x / rx * 1000).toInt().coerceIn(0, 1000))
+                            prefs.setInt(K.MEDIA_Y, (v.y / ry * 1000).toInt().coerceIn(0, 1000))
+                        } else v.performClick()
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+        fabMedia.setOnClickListener { showMediaPanel() }
+    }
+
+    private fun showMediaPanel() {
+        val t = cur
+        if (t.media.isEmpty()) return
+        MediaUi.showPanel(
+            this, fabMedia,
+            onPip = { playBest(true) },
+            onFull = { playBest(false) },
+            onDownload = { MediaUi.showSheet(this, t) }
+        )
+    }
+
+    private fun playBest(pip: Boolean) {
+        val vids = cur.media.filter { it.playable }
+        when {
+            vids.isEmpty() -> toast("No playable video found yet")
+            vids.size == 1 -> playMedia(vids[0], pip)
+            else -> Ui.listSheet(this, "Play", vids.mapIndexed { i, m ->
+                "${i + 1}   ${m.name}   (${m.typeLabel})" to { playMedia(m, pip) }
+            })
+        }
+    }
+
+    fun playMedia(item: MediaItem, pip: Boolean) {
+        val subs = ArrayList(cur.media.filter { it.kind == MediaKind.SUB }.map { it.url })
+        startActivity(
+            Intent(this, PlayerActivity::class.java)
+                .putExtra("url", item.url)
+                .putExtra("title", item.name)
+                .putExtra("referer", item.referer ?: cur.url ?: "")
+                .putExtra("ua", item.ua ?: userAgent())
+                .putExtra("cookie", CookieManager.getInstance().getCookie(item.url) ?: "")
+                .putStringArrayListExtra("subs", subs)
+                .putExtra("pip", pip)
         )
     }
 

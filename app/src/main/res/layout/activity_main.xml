@@ -6,6 +6,102 @@
     android:background="@color/bg"
     android:orientation="vertical">
 
+    <!-- top row: home | [lock host reload] | tab count | menu -->
+    <LinearLayout
+        android:id="@+id/addrRow"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp">
+
+        <ImageButton
+            android:id="@+id/topHome"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Home"
+            android:src="@drawable/ic_home" />
+
+        <LinearLayout
+            android:id="@+id/urlPill"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="4dp">
+
+            <ImageView
+                android:id="@+id/lockIcon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="8dp"
+                android:alpha="0.7"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_lock"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/urlField"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@null"
+                android:gravity="center_vertical"
+                android:hint="Search or enter address"
+                android:imeOptions="actionGo"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:maxLines="1"
+                android:selectAllOnFocus="true"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text_sub"
+                android:textSize="15sp" />
+
+            <ImageButton
+                android:id="@+id/btnReload"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Reload"
+                android:src="@drawable/ic_refresh" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/topTabs"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Tabs">
+
+            <TextView
+                android:id="@+id/topTabCount"
+                android:layout_width="28dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_tabcount"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="@color/icon"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <ImageButton
+            android:id="@+id/topMenu"
+            android:layout_width="40dp"
+            android:layout_height="44dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Menu"
+            android:src="@drawable/ic_more" />
+    </LinearLayout>
+
     <!-- tab bar: outlined pill tabs + "+" -->
     <LinearLayout
         android:id="@+id/tabBarRow"
@@ -30,79 +126,6 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="New tab"
             android:src="@drawable/ic_add" />
-    </LinearLayout>
-
-    <!-- address bar: star | pill | reader | reload -->
-    <LinearLayout
-        android:id="@+id/addrRow"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp">
-
-        <ImageButton
-            android:id="@+id/btnStar"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Bookmark"
-            android:src="@drawable/ic_star_border" />
-
-        <LinearLayout
-            android:id="@+id/urlPill"
-            android:layout_width="0dp"
-            android:layout_height="42dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp">
-
-            <ImageView
-                android:id="@+id/lockIcon"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginEnd="8dp"
-                android:alpha="0.7"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_lock"
-                android:visibility="gone" />
-
-            <EditText
-                android:id="@+id/urlField"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@null"
-                android:hint="Search or enter address"
-                android:imeOptions="actionGo"
-                android:importantForAutofill="no"
-                android:inputType="textUri"
-                android:maxLines="1"
-                android:selectAllOnFocus="true"
-                android:textColor="@color/text"
-                android:textColorHint="@color/text_sub"
-                android:textSize="15sp" />
-        </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btnReader"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Reader mode"
-            android:src="@drawable/ic_reader" />
-
-        <ImageButton
-            android:id="@+id/btnReload"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Reload"
-            android:src="@drawable/ic_refresh" />
     </LinearLayout>
 
     <FrameLayout
@@ -148,6 +171,17 @@
             android:contentDescription="Back to top"
             android:elevation="4dp"
             android:src="@drawable/ic_arrow_up"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/fabMedia"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top|start"
+            android:background="@drawable/bg_media_fab"
+            android:contentDescription="Detected media"
+            android:elevation="6dp"
+            android:src="@drawable/ic_video_library"
             android:visibility="gone" />
 
         <!-- find in page -->
@@ -219,6 +253,7 @@
         android:id="@+id/navRow"
         android:layout_width="match_parent"
         android:layout_height="52dp"
+        android:visibility="gone"
         android:orientation="horizontal">
 
         <ImageButton

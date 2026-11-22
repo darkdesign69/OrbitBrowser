@@ -1,8 +1,11 @@
-name: Build APK
+name: Apply Patch and Build APK
+
+run-name: "${{ github.event_name == 'push' && format('Apply {0} {1}', join(github.event.head_commit.added, ', '), join(github.event.head_commit.modified, ', ')) || 'Build current code' }}"
 
 on:
   push:
-    branches: [main]
+    paths:
+      - '*.zip'
   workflow_dispatch:
 
 permissions:
@@ -13,35 +16,60 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # If you uploaded OrbitBrowser.zip to the repo, unpack it and commit the files.
-      # If the project files are already in the repo, this step does nothing.
-      - name: Unpack project zip (only if present)
+      - name: Apply any zip uploaded in this push
         run: |
-          zip=$(ls OrbitBrowser*.zip 2>/dev/null | head -n1 || true)
-          if [ -n "$zip" ]; then
-            unzip -o -q "$zip"
-            rm -f "$zip"
-            git config user.name "github-actions"
-            git config user.email "actions@users.noreply.github.com"
+          : > /tmp/new_zips.txt
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git diff --name-only --diff-filter=AM "${{ github.event.before }}" "${{ github.sha }}" -- '*.zip' 2>/dev/null | grep -v '/' > /tmp/new_zips.txt || true
+            if [ ! -s /tmp/new_zips.txt ]; then
+              git ls-files | grep -E '^[^/]+\.zip$' | sort > /tmp/new_zips.txt || true
+            fi
+          fi
+          if [ -s /tmp/new_zips.txt ]; then
+            while IFS= read -r zipfile; do
+              echo "Applying: $zipfile"
+              cp "$zipfile" /tmp/current.zip
+              if echo "$zipfile" | grep -qi 'full'; then
+                echo "Full project zip: replacing all existing project files"
+                git ls-files -z | grep -zv '^\.github/' | xargs -0 -r git rm -q -f --
+              fi
+              rm -rf /tmp/patch && mkdir -p /tmp/patch
+              unzip -q -o /tmp/current.zip -d /tmp/patch
+              src=/tmp/patch
+              if [ "$(ls -A /tmp/patch | wc -l)" -eq 1 ]; then
+                only="$(ls -A /tmp/patch)"
+                if [ -d "/tmp/patch/$only" ] && [ "$only" != "app" ] && [ "$only" != ".github" ]; then
+                  src="/tmp/patch/$only"
+                fi
+              fi
+              cp -a "$src"/. .
+            done < /tmp/new_zips.txt
+            git ls-files | grep -E '^[^/]+\.zip$' | while IFS= read -r z; do git rm -q -f -- "$z"; done || true
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "Unpack project files"
+            git commit -m "Apply uploaded patch" || echo "Nothing to commit"
             git push
+          else
+            echo "No new zip in this push, building the current code"
           fi
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - run: gradle assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Orbit-debug-apk
+          name: orbit-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

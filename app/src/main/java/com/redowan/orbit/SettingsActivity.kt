@@ -110,7 +110,7 @@ class SettingsActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ row builders
 
-    private fun sw(key: String, title: String, def: Boolean, info: String = "", after: (() -> Unit)? = null, inv: Boolean = false): Row {
+    private fun sw(key: String, title: String, def: Boolean, info: String = "", inv: Boolean = false, after: (() -> Unit)? = null): Row {
         Prefs.DEFAULTS.putIfAbsent(key, def)
         return Sw(key, title, info, after, inv)
     }

@@ -29,8 +29,16 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         val close: ImageButton = v.findViewById(R.id.tabClose)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_tab_strip, parent, false))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_tab_strip, parent, false)
+        val p = Prefs(parent.context)
+        val d = parent.resources.displayMetrics.density
+        v.layoutParams = v.layoutParams.apply {
+            width = (p.int(K.LAY_TAB_W) * d).toInt()
+            height = ((p.int(K.LAY_TAB_H) - 8).coerceAtLeast(26) * d).toInt()
+        }
+        return VH(v)
+    }
 
     override fun getItemCount() = a.tabs.size
 
@@ -38,6 +46,12 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         val t = a.tabs[position]
         val selected = position == a.current
         h.itemView.isSelected = selected
+        val pf = Prefs(h.itemView.context)
+        val dn = h.itemView.resources.displayMetrics.density
+        h.itemView.layoutParams = h.itemView.layoutParams.apply {
+            width = (pf.int(K.LAY_TAB_W) * dn).toInt()
+            height = ((pf.int(K.LAY_TAB_H) - 8).coerceAtLeast(26) * dn).toInt()
+        }
         h.title.text = t.label()
         h.title.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         h.icon.setTabIcon(t)

@@ -6,7 +6,7 @@ Every row shown in Orbit works. Soul options that need things the system WebView
 
 Working here: General, Advanced (AMP, cookies, third-party cookies, JavaScript + blacklist, HTTPS, SSL errors,
 harmful-site blocking, web debugging), Site (long press, home page, start page, new tab, search engine, user agent),
-Backup, Web cleaner (ad blocker, filters, whitelists, overlay, popups, blocked links), Download, Media, Memory saving
+Backup, Layout (editor: arrange top/bottom bar items, change/move/delete/add, spaces, bar/icon/tab sizes, home columns), Web cleaner (ad blocker, filters, whitelists, overlay, popups, blocked links), Download, Media, Memory saving
 (open limit, memory limit, release-prevention list), Display (UI, web page dark mode, screen filter + colour, brightness,
 timeout, rotation), Layout, Menu, Tab, Composition, Web content, Gesture, Translator, Text to Speech, TV Cast, Security,
 Incognito mode, Password (system autofill), Clear data, DNS, Information.

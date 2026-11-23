@@ -696,6 +696,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun openPage(p: String) {
         when (p) {
+            "layout" -> { startActivity(Intent(this, LayoutActivity::class.java)); return }
             "rate" -> { link("https://github.com/darkdesign69/OrbitBrowser"); return }
             "feedback" -> { link("https://github.com/darkdesign69/OrbitBrowser/issues"); return }
             "recommend" -> {

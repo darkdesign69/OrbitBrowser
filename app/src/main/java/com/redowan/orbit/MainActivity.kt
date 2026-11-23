@@ -30,6 +30,8 @@ import android.print.PrintManager
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.TypedValue
+import android.widget.FrameLayout
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -96,15 +98,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tabStrip: RecyclerView
     private lateinit var urlField: EditText
     private lateinit var lockIcon: ImageView
-    private lateinit var topHome: ImageButton
-    private lateinit var topTabs: View
-    private lateinit var topTabCount: TextView
-    private lateinit var topMenu: ImageButton
+    private lateinit var urlPill: View
+    private val countViews = ArrayList<TextView>()
+    private val backViews = ArrayList<View>()
+    private val fwdViews = ArrayList<View>()
+    private val reloadViews = ArrayList<ImageButton>()
     private lateinit var fabMedia: ImageButton
     private lateinit var btnReload: ImageButton
-    private lateinit var btnBack: ImageButton
-    private lateinit var btnForward: ImageButton
-    private lateinit var tabCount: TextView
     private lateinit var webHolder: SwipeRefreshLayout
     private lateinit var startList: RecyclerView
     private lateinit var progress: ProgressBar
@@ -274,15 +274,9 @@ class MainActivity : AppCompatActivity() {
         tabStrip = findViewById(R.id.tabStrip)
         urlField = findViewById(R.id.urlField)
         lockIcon = findViewById(R.id.lockIcon)
-        topHome = findViewById(R.id.topHome)
-        topTabs = findViewById(R.id.topTabs)
-        topTabCount = findViewById(R.id.topTabCount)
-        topMenu = findViewById(R.id.topMenu)
+        urlPill = findViewById(R.id.urlPill)
         fabMedia = findViewById(R.id.fabMedia)
         btnReload = findViewById(R.id.btnReload)
-        btnBack = findViewById(R.id.btnBack)
-        btnForward = findViewById(R.id.btnForward)
-        tabCount = findViewById(R.id.tabCount)
         webHolder = findViewById(R.id.webHolder)
         startList = findViewById(R.id.startList)
         progress = findViewById(R.id.progress)
@@ -294,6 +288,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun wireClicks() {
         findViewById<View>(R.id.btnNewTab).setOnClickListener { newTab(null) }
+        findViewById<ImageButton>(R.id.btnNewTab).setImageResource(Bars.icon(this, "outline_add"))
 
         urlField.setOnEditorActionListener { v, actionId, ev ->
             val go = actionId == EditorInfo.IME_ACTION_GO ||
@@ -314,10 +309,6 @@ class MainActivity : AppCompatActivity() {
             } else updateAddress()
         }
 
-        topHome.setOnClickListener { goHome() }
-        topMenu.setOnClickListener { showMenu() }
-        topTabs.setOnClickListener { TabSwitcher(this).show() }
-        topTabs.setOnLongClickListener { tabsQuickMenu(); true }
         setupMediaFab()
         btnReload.setOnClickListener {
             val t = cur
@@ -328,17 +319,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        btnBack.setOnClickListener {
-            val w = cur.web
-            if (w != null && w.canGoBack() && !cur.home) w.goBack() else if (!cur.home) goHome()
-        }
-        btnForward.setOnClickListener { if (cur.web?.canGoForward() == true) cur.web?.goForward() }
-        findViewById<View>(R.id.btnHome).setOnClickListener { goHome() }
-        findViewById<View>(R.id.btnBookmarks).setOnClickListener { openLibrary("bookmarks") }
-        val tabsBtn = findViewById<View>(R.id.btnTabs)
-        tabsBtn.setOnClickListener { TabSwitcher(this).show() }
-        tabsBtn.setOnLongClickListener { tabsQuickMenu(); true }
-        findViewById<View>(R.id.btnMenu).setOnClickListener { showMenu() }
 
         fabTop.setOnClickListener { cur.web?.scrollTo(0, 0); fabTop.visibility = View.GONE }
 
@@ -354,6 +334,112 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.findPrev).setOnClickListener { cur.web?.findNext(false) }
         findViewById<View>(R.id.findClose).setOnClickListener { closeFind() }
     }
+
+    // ------------------------------------------------------------------ configurable bars (Settings > Layout)
+
+    private fun reloadClick() {
+        val t = cur
+        when {
+            t.home -> dialAdapter.reload()
+            t.loading -> t.web?.stopLoading()
+            else -> t.web?.reload()
+        }
+    }
+
+    private fun goBackClick() {
+        val w = cur.web
+        if (w != null && w.canGoBack() && !cur.home) w.goBack() else if (!cur.home) goHome()
+    }
+
+    private fun barItem(id: String, bottom: Boolean): View? {
+        val box = dp(prefs.int(K.LAY_ICON))
+        val tv = TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, tv, true)
+        val lp = if (bottom) LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+        else LinearLayout.LayoutParams(box, box)
+        fun btn(icon: Int, desc: String, click: () -> Unit) = ImageButton(this).apply {
+            setImageResource(icon); contentDescription = desc
+            setBackgroundResource(tv.resourceId)
+            layoutParams = lp
+            setOnClickListener { click() }
+        }
+        fun ic(name: String) = Bars.icon(this, name)
+        return when (id) {
+            "address" -> null
+            "space" -> View(this).apply { layoutParams = lp }
+            "home" -> btn(ic("outline_home"), "Home") { goHome() }
+            "menu" -> btn(ic("outline_more_vert"), "Menu") { showMenu() }
+            "back" -> btn(ic("outline_keyboard_arrow_left"), "Back") { goBackClick() }.also { backViews.add(it) }
+            "forward" -> btn(ic("outline_keyboard_arrow_right"), "Forward") {
+                if (cur.web?.canGoForward() == true) cur.web?.goForward()
+            }.also { fwdViews.add(it) }
+            "reload" -> btn(ic("outline_refresh"), "Refresh") { reloadClick() }.also { reloadViews.add(it) }
+            "newtab" -> btn(ic("outline_add"), "New tab") { newTab(null) }
+            "bookmarks" -> btn(ic("outline_kid_star"), "Bookmark") { openLibrary("bookmarks") }
+            "history" -> btn(ic("outline_history"), "History") { openLibrary("history") }
+            "downloads" -> btn(ic("outline_download"), "Downloads") { startActivity(Intent(this, DownloadsActivity::class.java)) }
+            "settings" -> btn(ic("outline_settings"), "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
+            "share" -> btn(ic("outline_share"), "Share") { cur.url?.let { share(it) } }
+            "find" -> btn(ic("outline_find_in_page"), "Find in page") { openFind() }
+            "tabs" -> FrameLayout(this).apply {
+                layoutParams = lp
+                setBackgroundResource(tv.resourceId)
+                contentDescription = "Tabs"
+                val c = TextView(this@MainActivity).apply {
+                    layoutParams = FrameLayout.LayoutParams(dp(28), dp(26), Gravity.CENTER)
+                    setBackgroundResource(R.drawable.bg_tabcount)
+                    gravity = Gravity.CENTER
+                    setTextColor(color(R.color.icon))
+                    textSize = 12f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    text = tabs.size.toString()
+                }
+                addView(c); countViews.add(c)
+                setOnClickListener { TabSwitcher(this@MainActivity).show() }
+                setOnLongClickListener { tabsQuickMenu(); true }
+            }
+            else -> null
+        }
+    }
+
+    private fun fillBar(row: LinearLayout, ids: List<String>, bottom: Boolean) {
+        row.removeAllViews()
+        var addressDone = false
+        for (id in ids) {
+            if (id == "address") {
+                if (addressDone || bottom) continue
+                addressDone = true
+                (urlPill.parent as? ViewGroup)?.removeView(urlPill)
+                urlPill.layoutParams = LinearLayout.LayoutParams(0, dp(prefs.int(K.LAY_TOP_H) - 12).coerceAtLeast(dp(30)), 1f).apply {
+                    marginStart = dp(4); marginEnd = dp(4)
+                }
+                row.addView(urlPill)
+            } else barItem(id, bottom)?.let { row.addView(it) }
+        }
+    }
+
+    /** Builds the top bar, bottom bar and sizes from Settings > Layout. */
+    private fun rebuildBars() {
+        countViews.clear(); backViews.clear(); fwdViews.clear(); reloadViews.clear()
+        val top = Bars.parse(prefs.str(K.LAY_TOP))
+        val bottom = Bars.parse(prefs.str(K.LAY_BOTTOM))
+        fillBar(addrRow as LinearLayout, top, false)
+        fillBar(navRow as LinearLayout, bottom, true)
+        if (top.contains("address")) { /* pill attached above */ }
+        else (urlPill.parent as? ViewGroup)?.removeView(urlPill)
+        addrRow.layoutParams = addrRow.layoutParams.apply { height = dp(prefs.int(K.LAY_TOP_H)) }
+        addrRow.visibility = if (top.isEmpty()) View.GONE else View.VISIBLE
+        tabBarRow.layoutParams = tabBarRow.layoutParams.apply { height = dp(prefs.int(K.LAY_TAB_H)) }
+        navRow.layoutParams = navRow.layoutParams.apply { height = dp(prefs.int(K.LAY_BOT_H)) }
+        navRow.visibility = if (bottom.isEmpty()) View.GONE else View.VISIBLE
+        (startList.layoutManager as? GridLayoutManager)?.spanCount = prefs.int(K.LAY_COLS).coerceIn(2, 8)
+        findViewById<ImageButton>(R.id.btnNewTab).layoutParams =
+            findViewById<ImageButton>(R.id.btnNewTab).layoutParams.apply { width = dp(prefs.int(K.LAY_TAB_H)); height = dp(prefs.int(K.LAY_TAB_H)) }
+        tabCountSync()
+        stripAdapter.notifyDataSetChanged()
+    }
+
+    private fun tabCountSync() { countViews.forEach { it.text = tabs.size.toString() } }
 
     /** Re-applies settings that change layout or behaviour. Called on resume (after Settings). */
     private fun applyPrefs() {
@@ -371,7 +457,7 @@ class MainActivity : AppCompatActivity() {
             root.addView(addrRow, 0)
             root.addView(tabBarRow, 1)
         }
-        navRow.visibility = if (prefs.bool(K.NAV_BAR)) View.VISIBLE else View.GONE
+        rebuildBars()
         if (!prefs.scrollHide) showBars()
 
         tabs.forEach { applyWebSettings(it) }
@@ -520,8 +606,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshTabs() {
         stripAdapter.notifyDataSetChanged()
-        tabCount.text = tabs.size.toString()
-        topTabCount.text = tabs.size.toString()
+        countViews.forEach { it.text = tabs.size.toString() }
         if (current in tabs.indices) tabStrip.scrollToPosition(current)
     }
 
@@ -674,6 +759,7 @@ class MainActivity : AppCompatActivity() {
         val https = t.url?.startsWith("https://") == true && !t.home
         lockIcon.visibility = if (https) View.VISIBLE else View.GONE
         btnReload.setImageResource(if (t.loading && !t.home) R.drawable.ic_stop else R.drawable.ic_refresh)
+        reloadViews.forEach { it.setImageResource(if (t.loading && !t.home) R.drawable.ic_stop else R.drawable.ic_refresh) }
         if (t.loading && t.progress < 100 && !t.home) {
             progress.visibility = View.VISIBLE
             progress.progress = t.progress
@@ -682,8 +768,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNav() {
         val w = cur.web
-        btnBack.alpha = if (!cur.home) 1f else 0.4f
-        btnForward.alpha = if (w != null && w.canGoForward()) 1f else 0.4f
+        backViews.forEach { it.alpha = if (!cur.home) 1f else 0.4f }
+        fwdViews.forEach { it.alpha = if (w != null && w.canGoForward()) 1f else 0.4f }
     }
 
     // ------------------------------------------------------------------ bars hide on scroll

@@ -82,6 +82,14 @@ object K {
     const val KEYBOARD_ADD = "keyboard_add"
     const val TAB_OPEN_LIMIT = "tab_open_limit"
     const val DEBUG_WEB = "adv_debug"
+    const val LAY_TOP = "lay_top"
+    const val LAY_BOTTOM = "lay_bottom"
+    const val LAY_TOP_H = "lay_top_h"
+    const val LAY_ICON = "lay_icon"
+    const val LAY_TAB_H = "lay_tab_h"
+    const val LAY_TAB_W = "lay_tab_w"
+    const val LAY_BOT_H = "lay_bot_h"
+    const val LAY_COLS = "lay_cols"
 }
 
 /** Languages offered for translation: label and language code ("" = follow the system). */
@@ -245,7 +253,15 @@ class Prefs(context: Context) {
             "mem_tab_limit" to 0,
             K.KEYBOARD_ADD to false,
             K.TAB_OPEN_LIMIT to 0,
-            K.DEBUG_WEB to false
+            K.DEBUG_WEB to false,
+            K.LAY_TOP to Bars.DEFAULT_TOP,
+            K.LAY_BOTTOM to Bars.DEFAULT_BOTTOM,
+            K.LAY_TOP_H to 54,
+            K.LAY_ICON to 44,
+            K.LAY_TAB_H to 46,
+            K.LAY_TAB_W to 156,
+            K.LAY_BOT_H to 52,
+            K.LAY_COLS to 4
         )
     }
 }

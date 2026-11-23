@@ -279,7 +279,6 @@ class MainActivity : AppCompatActivity() {
     private fun bindViews() {
         root = findViewById(R.id.root)
         tabBarRow = findViewById(R.id.tabBarRow)
-        setupTabBarSwipe()
         addrRow = findViewById(R.id.addrRow)
         navRow = findViewById(R.id.navRow)
         tabStrip = findViewById(R.id.tabStrip)
@@ -295,6 +294,7 @@ class MainActivity : AppCompatActivity() {
         findBar = findViewById(R.id.findBar)
         findField = findViewById(R.id.findField)
         findCount = findViewById(R.id.findCount)
+        setupTabBarSwipe()
     }
 
     private fun wireClicks() {

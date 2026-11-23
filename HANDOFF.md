@@ -35,3 +35,5 @@ SettingsActivity needs a static default there.
 
 RULE FROM THE USER (every delivery): whenever a new zip is given, update this HANDOFF.md and docs/PROJECT_HISTORY.md first so
 another model can continue. Full chat history and analysis are in docs/PROJECT_HISTORY.md. Read it before doing anything.
+
+Lesson: bindViews() assigns lateinit views in order; anything using tabStrip/tabBarRow must run after ALL are assigned (a crash at launch came from calling setupTabBarSwipe too early).

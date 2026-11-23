@@ -90,6 +90,9 @@ object K {
     const val LAY_TAB_W = "lay_tab_w"
     const val LAY_BOT_H = "lay_bot_h"
     const val LAY_COLS = "lay_cols"
+    const val MENU_QUICK = "menu_quick"
+    const val MENU_LIST = "menu_list"
+    const val MENU_BOTTOM = "menu_bottom"
 }
 
 /** Languages offered for translation: label and language code ("" = follow the system). */
@@ -261,7 +264,10 @@ class Prefs(context: Context) {
             K.LAY_TAB_H to 46,
             K.LAY_TAB_W to 156,
             K.LAY_BOT_H to 52,
-            K.LAY_COLS to 4
+            K.LAY_COLS to 4,
+            K.MENU_QUICK to MenuCat.DEFAULT_QUICK,
+            K.MENU_LIST to MenuCat.DEFAULT_LIST,
+            K.MENU_BOTTOM to MenuCat.DEFAULT_BOTTOM
         )
     }
 }

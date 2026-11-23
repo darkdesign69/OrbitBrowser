@@ -1390,9 +1390,82 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Soul-style popup: quick buttons on top, grouped cards, Incognito / Desktop / DNS at the bottom. */
-    private fun showPopupMenu() {
+    private class ME(val icon: Int, val label: String, val dim: Boolean = false, val act: () -> Unit)
+
+    private fun menuEntry(id: String): ME? {
         val t = cur
-        val starred = store.isBookmarked(t.url)
+        return when (id) {
+            "reload" -> ME(R.drawable.ic_refresh, "Reload") { if (cur.home) dialAdapter.reload() else cur.web?.reload() }
+            "adblock" -> ME(R.drawable.ic_shield, "Ad blocker", !prefs.adBlock) {
+                prefs.setBool(K.ADBLOCK, !prefs.adBlock)
+                toast(if (prefs.adBlock) "Ad blocker on" else "Ad blocker off")
+                cur.web?.reload()
+            }
+            "bookmark" -> ME(if (store.isBookmarked(t.url)) R.drawable.ic_star else R.drawable.ic_star_border,
+                if (store.isBookmarked(t.url)) "Bookmarked" else "Bookmark", false, needPage { toggleBookmark(it) })
+            "bookmarks" -> ME(R.drawable.ic_bookmarks, "Bookmarks") { openLibrary("bookmarks") }
+            "settings" -> ME(R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
+            "back" -> ME(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) cur.web?.goBack() }
+            "forward" -> ME(R.drawable.ic_forward, "Forward") { if (cur.web?.canGoForward() == true) cur.web?.goForward() }
+            "exit" -> ME(R.drawable.ic_power, "Exit app") { finishAndRemoveTask() }
+            "history" -> ME(R.drawable.ic_history, "History") { openLibrary("history") }
+            "downloads" -> ME(R.drawable.ic_download, "Downloads") { startActivity(Intent(this, DownloadsActivity::class.java)) }
+            "newtab" -> ME(R.drawable.ic_add, "New tab") { newTab(null) }
+            "fullscreen" -> ME(R.drawable.ic_fullscreen_enter, if (prefs.bool(K.FULLSCREEN)) "Exit full screen" else "Full screen") {
+                prefs.setBool(K.FULLSCREEN, !prefs.bool(K.FULLSCREEN)); applyDisplayPrefs()
+            }
+            "dark" -> ME(R.drawable.ic_dark, if (prefs.pageDark) "Light mode" else "Dark mode") {
+                prefs.setBool(K.PAGE_DARK, !prefs.pageDark)
+                tabs.forEach { tb -> tb.web?.let { w -> injectPageDark(w) } }
+            }
+            "translate" -> ME(R.drawable.ic_translate, "Translate", false, needPage { tb ->
+                navigate(tb, "https://translate.google.com/translate?sl=auto&tl=${Langs.target(prefs)}&u=" + Uri.encode(tb.url))
+            })
+            "read" -> ME(R.drawable.ic_volume, "Read aloud", false, needPage { readAloud(it) })
+            "find" -> ME(R.drawable.ic_search, "Find in page") { openFind() }
+            "share" -> ME(R.drawable.ic_share, "Share URL", false, needPage { share(it.url ?: "") })
+            "copy" -> ME(R.drawable.ic_copy, "Copy link", false, needPage { copy(it.url ?: "") })
+            "openapp" -> ME(R.drawable.ic_open_new, "Open in app", false, needPage { openWithApp(it.url ?: "") })
+            "addpage" -> ME(R.drawable.ic_add, "Add current page", false, needPage { tb ->
+                val list = store.dial()
+                list.add(Dial(tb.label().take(24), tb.url))
+                store.saveDial(list)
+                toast("Added to start page")
+            })
+            "print" -> ME(R.drawable.ic_print, "Print / PDF", false, needPage { tb ->
+                val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
+                val name = tb.label()
+                pm.print(name, tb.web!!.createPrintDocumentAdapter(name), PrintAttributes.Builder().build())
+            })
+            "reader" -> ME(R.drawable.ic_reader, if (t.readerOn) "Exit reader" else "Reader mode", false, needPage { toggleReader() })
+            "source" -> ME(R.drawable.ic_dashboard, "Page source", false, needPage { showSource(it) })
+            "media" -> ME(R.drawable.ic_video_library, "Page media") {
+                if (cur.media.isEmpty()) toast("No media found on this page yet") else MediaUi.showSheet(this, cur)
+            }
+            "textsize" -> ME(R.drawable.ic_text, "Text size") {
+                Ui.listSheet(this, "Text size", listOf(80, 90, 100, 115, 130, 150).map { sz ->
+                    "$sz%" to {
+                        prefs.setInt(K.TEXT_ZOOM, sz)
+                        tabs.forEach { tb -> applyWebSettings(tb) }
+                    }
+                })
+            }
+            "overlays" -> ME(R.drawable.ic_close, "Hide overlays", false, needPage { tb ->
+                tb.web?.evaluateJavascript(OVERLAY_JS) { n -> toast("Removed ${n ?: "0"} overlay(s)") }
+            })
+            "site" -> ME(R.drawable.ic_lock, "Site settings", false, needPage { siteSettings(it) })
+            "incognito" -> ME(R.drawable.ic_incognito, "Incognito mode") { newTab(null, true) }
+            "desktop" -> ME(R.drawable.ic_desktop, if (t.desktop) "Mobile" else "Desktop", false, needPage {
+                it.desktop = !it.desktop; applyWebSettings(it); it.web?.reload()
+            })
+            "dns" -> ME(R.drawable.ic_key, "DNS") {
+                startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", "dns"))
+            }
+            else -> null
+        }
+    }
+
+    private fun showPopupMenu() {
         val d = AppCompatDialog(this, R.style.PopupDialog)
         val inf = LayoutInflater.from(this)
         val matchW = ViewGroup.LayoutParams.MATCH_PARENT
@@ -1423,97 +1496,38 @@ class MainActivity : AppCompatActivity() {
         // quick buttons
         val top = newCard()
         top.orientation = LinearLayout.HORIZONTAL
-        fun quick(icon: Int, desc: String, dim: Boolean, act: () -> Unit) {
+        fun quick(e: ME) {
             val b = ImageButton(this)
-            b.setImageResource(icon)
+            b.setImageResource(e.icon)
             b.setBackgroundResource(rippleRes)
-            b.contentDescription = desc
-            b.alpha = if (dim) 0.4f else 1f
-            b.setOnClickListener { d.dismiss(); act() }
+            b.contentDescription = e.label
+            b.alpha = if (e.dim) 0.4f else 1f
+            b.setOnClickListener { d.dismiss(); e.act() }
             top.addView(b, LinearLayout.LayoutParams(0, dp(54), 1f))
         }
-        quick(R.drawable.ic_refresh, "Reload", false) { if (cur.home) dialAdapter.reload() else cur.web?.reload() }
-        quick(R.drawable.ic_shield, "Ad blocker", !prefs.adBlock) {
-            prefs.setBool(K.ADBLOCK, !prefs.adBlock)
-            toast(if (prefs.adBlock) "Ad blocker on" else "Ad blocker off")
-            cur.web?.reload()
-        }
-        quick(if (starred) R.drawable.ic_star else R.drawable.ic_star_border, "Bookmark", false, needPage { toggleBookmark(it) })
-        quick(R.drawable.ic_bookmarks, "Bookmarks", false) { openLibrary("bookmarks") }
-        quick(R.drawable.ic_settings, "Settings", false) { startActivity(Intent(this, SettingsActivity::class.java)) }
+        MenuCat.parse(prefs.str(K.MENU_QUICK)).forEach { id -> menuEntry(id)?.let { quick(it) } }
+        if (top.childCount == 0) root.removeView(top)
 
-        val a = newCard()
-        row(a, R.drawable.ic_power, "Exit app") { finishAndRemoveTask() }
-        row(a, R.drawable.ic_history, "History") { openLibrary("history") }
-        row(a, R.drawable.ic_download, "Downloads") {
-            startActivity(Intent(this, DownloadsActivity::class.java))
+        var card: LinearLayout? = null
+        for (id in MenuCat.parse(prefs.str(K.MENU_LIST))) {
+            if (id == "sep") { card = null; continue }
+            val e = menuEntry(id) ?: continue
+            if (card == null) card = newCard()
+            row(card, e.icon, e.label, e.act)
         }
-        row(a, R.drawable.ic_add, "New tab") { newTab(null) }
-
-        val b = newCard()
-        row(b, R.drawable.ic_fullscreen_enter, if (prefs.bool(K.FULLSCREEN)) "Exit full screen" else "Full screen") {
-            prefs.setBool(K.FULLSCREEN, !prefs.bool(K.FULLSCREEN)); applyDisplayPrefs()
-        }
-        row(b, R.drawable.ic_dark, if (prefs.pageDark) "Light mode" else "Dark mode") {
-            prefs.setBool(K.PAGE_DARK, !prefs.pageDark)
-            tabs.forEach { tb -> tb.web?.let { w -> injectPageDark(w) } }
-        }
-        row(b, R.drawable.ic_translate, "Translate", needPage { tb ->
-            navigate(tb, "https://translate.google.com/translate?sl=auto&tl=${Langs.target(prefs)}&u=" + Uri.encode(tb.url))
-        })
-        row(b, R.drawable.ic_volume, "Read aloud", needPage { readAloud(it) })
-        row(b, R.drawable.ic_search, "Find in page") { openFind() }
-
-        val c = newCard()
-        row(c, R.drawable.ic_share, "Share URL", needPage { share(it.url ?: "") })
-        row(c, R.drawable.ic_copy, "Copy link", needPage { copy(it.url ?: "") })
-        row(c, R.drawable.ic_open_new, "Open in app", needPage { openWithApp(it.url ?: "") })
-        row(c, R.drawable.ic_add, "Add current page", needPage { tb ->
-            val list = store.dial()
-            list.add(Dial(tb.label().take(24), tb.url))
-            store.saveDial(list)
-            toast("Added to start page")
-        })
-        row(c, R.drawable.ic_print, "Print / PDF", needPage { tb ->
-            val pm = getSystemService(Context.PRINT_SERVICE) as PrintManager
-            val name = tb.label()
-            pm.print(name, tb.web!!.createPrintDocumentAdapter(name), PrintAttributes.Builder().build())
-        })
-        row(c, R.drawable.ic_reader, if (t.readerOn) "Exit reader" else "Reader mode", needPage { toggleReader() })
-        row(c, R.drawable.ic_dashboard, "Page source", needPage { showSource(it) })
-        row(c, R.drawable.ic_video_library, "Page media") {
-            if (cur.media.isEmpty()) toast("No media found on this page yet") else MediaUi.showSheet(this, cur)
-        }
-        row(c, R.drawable.ic_text, "Text size") {
-            Ui.listSheet(this, "Text size", listOf(80, 90, 100, 115, 130, 150).map { sz ->
-                "$sz%" to {
-                    prefs.setInt(K.TEXT_ZOOM, sz)
-                    tabs.forEach { tb -> applyWebSettings(tb) }
-                }
-            })
-        }
-        row(c, R.drawable.ic_close, "Hide overlays", needPage { tb ->
-            tb.web?.evaluateJavascript(OVERLAY_JS) { n -> toast("Removed ${n ?: "0"} overlay(s)") }
-        })
-        row(c, R.drawable.ic_lock, "Site settings", needPage { siteSettings(it) })
 
         // bottom row
         val bottom = newCard()
         bottom.orientation = LinearLayout.HORIZONTAL
-        fun bItem(icon: Int, label: String, act: () -> Unit) {
+        fun bItem(e: ME) {
             val v = inf.inflate(R.layout.item_menu, bottom, false)
-            v.findViewById<ImageView>(R.id.menuIcon).setImageResource(icon)
-            v.findViewById<TextView>(R.id.menuLabel).text = label
-            v.setOnClickListener { d.dismiss(); act() }
+            v.findViewById<ImageView>(R.id.menuIcon).setImageResource(e.icon)
+            v.findViewById<TextView>(R.id.menuLabel).text = e.label
+            v.setOnClickListener { d.dismiss(); e.act() }
             bottom.addView(v)
         }
-        bItem(R.drawable.ic_incognito, "Incognito mode") { newTab(null, true) }
-        bItem(R.drawable.ic_desktop, if (t.desktop) "Mobile" else "Desktop", needPage {
-            it.desktop = !it.desktop; applyWebSettings(it); it.web?.reload()
-        })
-        bItem(R.drawable.ic_key, "DNS") {
-            startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", "dns"))
-        }
+        MenuCat.parse(prefs.str(K.MENU_BOTTOM)).forEach { id -> menuEntry(id)?.let { bItem(it) } }
+        if (bottom.childCount == 0) root.removeView(bottom)
 
         val scroll = ScrollView(this)
         scroll.addView(root)

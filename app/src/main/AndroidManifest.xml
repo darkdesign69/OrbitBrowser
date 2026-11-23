@@ -54,6 +54,10 @@
             android:exported="false"
             android:label="Layout" />
         <activity
+            android:name=".MenuEditorActivity"
+            android:exported="false"
+            android:label="Menu" />
+        <activity
             android:name=".LibraryActivity"
             android:exported="false" />
     </application>

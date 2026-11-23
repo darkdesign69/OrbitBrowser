@@ -41,3 +41,46 @@ object Bars {
         return ctx.resources.getIdentifier("${name}_${if (night) "dark" else "black"}_$size", "drawable", ctx.packageName)
     }
 }
+
+/** Entries of the three-dot menu (Settings > Menu). "-" starts a new card. */
+object MenuCat {
+    val ALL = listOf(
+        Bars.Item("reload", "Reload", "ic_refresh"),
+        Bars.Item("adblock", "Ad blocker", "ic_shield"),
+        Bars.Item("bookmark", "Bookmark", "ic_star_border"),
+        Bars.Item("bookmarks", "Bookmarks", "ic_bookmarks"),
+        Bars.Item("settings", "Settings", "ic_settings"),
+        Bars.Item("back", "Back", "ic_back"),
+        Bars.Item("forward", "Forward", "ic_forward"),
+        Bars.Item("exit", "Exit app", "ic_power"),
+        Bars.Item("history", "History", "ic_history"),
+        Bars.Item("downloads", "Downloads", "ic_download"),
+        Bars.Item("newtab", "New tab", "ic_add"),
+        Bars.Item("fullscreen", "Full screen", "ic_fullscreen_enter"),
+        Bars.Item("dark", "Dark mode", "ic_dark"),
+        Bars.Item("translate", "Translate", "ic_translate"),
+        Bars.Item("read", "Read aloud", "ic_volume"),
+        Bars.Item("find", "Find in page", "ic_search"),
+        Bars.Item("share", "Share URL", "ic_share"),
+        Bars.Item("copy", "Copy link", "ic_copy"),
+        Bars.Item("openapp", "Open in app", "ic_open_new"),
+        Bars.Item("addpage", "Add current page", "ic_add"),
+        Bars.Item("print", "Print / PDF", "ic_print"),
+        Bars.Item("reader", "Reader mode", "ic_reader"),
+        Bars.Item("source", "Page source", "ic_dashboard"),
+        Bars.Item("media", "Page media", "ic_video_library"),
+        Bars.Item("textsize", "Text size", "ic_text"),
+        Bars.Item("overlays", "Hide overlays", "ic_close"),
+        Bars.Item("site", "Site settings", "ic_lock"),
+        Bars.Item("incognito", "Incognito mode", "ic_incognito"),
+        Bars.Item("desktop", "Desktop", "ic_desktop"),
+        Bars.Item("dns", "DNS", "ic_key"),
+        Bars.Item("sep", "Separator", "")
+    )
+    const val DEFAULT_QUICK = "reload,adblock,bookmark,bookmarks,settings"
+    const val DEFAULT_LIST = "exit,history,downloads,newtab,sep,fullscreen,dark,translate,read,find,sep," +
+        "share,copy,openapp,addpage,print,reader,source,media,textsize,overlays,site"
+    const val DEFAULT_BOTTOM = "incognito,desktop,dns"
+    fun item(id: String) = ALL.firstOrNull { it.id == id }
+    fun parse(s: String): MutableList<String> = s.split(',').map { it.trim() }.filter { item(it) != null }.toMutableList()
+}

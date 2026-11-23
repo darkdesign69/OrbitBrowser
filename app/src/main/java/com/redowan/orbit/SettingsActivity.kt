@@ -397,9 +397,12 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun menuRows(): List<Row> = listOf(
-        ch(K.MENU_STYLE, "Menu style", listOf("Popup", "Bottom sheet"), 0, "How the three-dot menu opens."),
+        act("Edit menu", "Choose which items the menu shows, and their order.") {
+            startActivity(Intent(this, MenuEditorActivity::class.java))
+        },
         Gap,
-        Note("The popup menu has quick buttons on top (reload, ad blocker, bookmark, bookmarks, settings) and Incognito, Desktop and DNS at the bottom.")
+        ch(K.MENU_STYLE, "Menu style", listOf("Popup", "Bottom sheet"), 0,
+            "How the three-dot menu opens. Edit menu applies to the popup style.")
     )
 
     private fun tabRows(): List<Row> = listOf(

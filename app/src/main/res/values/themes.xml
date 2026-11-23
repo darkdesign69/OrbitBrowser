@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:fontFamily">@font/source_code_pro</item>
+        <item name="alertDialogTheme">@style/OrbitAlert</item>
         <item name="colorPrimary">@color/bg</item>
         <item name="colorPrimaryDark">@color/bg</item>
         <item name="colorAccent">@color/accent_dark</item>
@@ -21,6 +23,7 @@
 
     <!-- bottom sheet, like the reference app's slide-up dialogs -->
     <style name="SheetDialog" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="android:fontFamily">@font/source_code_pro</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowAnimationStyle">@style/SheetAnim</item>
         <item name="android:windowNoTitle">true</item>
@@ -31,6 +34,7 @@
 
     <!-- Soul-style popup menu, anchored top-right -->
     <style name="PopupDialog" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="android:fontFamily">@font/source_code_pro</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">true</item>
@@ -39,10 +43,16 @@
     </style>
 
     <style name="FullDialog" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:fontFamily">@font/source_code_pro</item>
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:windowAnimationStyle">@style/SheetAnim</item>
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- alert dialogs keep the Orbit font -->
+    <style name="OrbitAlert" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+        <item name="android:fontFamily">@font/source_code_pro</item>
     </style>
 </resources>

@@ -101,11 +101,13 @@ class SettingsActivity : AppCompatActivity() {
         val list = findViewById<RecyclerView>(R.id.setList)
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
+        ThemeBg.apply(this)
     }
 
     override fun onResume() {
         super.onResume()
         if (::adapter.isInitialized) adapter.notifyDataSetChanged()
+        ThemeBg.apply(this)
     }
 
     // ------------------------------------------------------------------ row builders
@@ -379,6 +381,11 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun displayRows(): List<Row> = listOf(
+        act("Customize theme", "Background picture, colour, transparency, blur and dark overlay.") {
+            startActivity(Intent(this, ThemeActivity::class.java))
+        },
+        sw(ThemeBg.WEB_FONT, "App font on websites", true, "Shows web pages in the Orbit font (Source Code Pro). Reload the page to apply."),
+        Gap,
         ch(K.THEME, "UI", listOf("System", "Light", "Dark"), 2) { OrbitApp.applyNightMode(prefs.int(K.THEME)) },
         sw(K.PAGE_DARK, "Web page", false, "Darkens page colours, keeps images normal."),
         Gap,
@@ -459,7 +466,7 @@ class SettingsActivity : AppCompatActivity() {
             for (i in names.indices) {
                 val v = LayoutInflater.from(this).inflate(R.layout.item_tab_strip, previewTabs, false)
                 v.findViewById<TextView>(R.id.tabTitle).text = names[i]
-                v.findViewById<TextView>(R.id.tabTitle).setTypeface(null, if (i == 0) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                v.findViewById<TextView>(R.id.tabTitle).let { it.setTypeface(it.typeface, if (i == 0) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL) }
                 v.findViewById<ImageView>(R.id.tabIcon).setImageResource(R.drawable.ic_home)
                 TabStyle.style(v, i == 0, outline, color, closeBtn, wPct, hPct)
                 previewTabs.addView(v)

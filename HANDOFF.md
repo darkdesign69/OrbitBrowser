@@ -35,6 +35,34 @@ Delivery 12 (UNVERIFIED by compile, from the user's screenshots of Soul vs Orbit
 - Three-dot menu (MainActivity.showPopupMenu): top quick row and bottom row (icon only) are FIXED, only the list scrolls
   (CappedColumn + ScrollView weight 1); 62% wide; opens 24dp below the toolbar top, positioned from addrRow screen coordinates
   (old version used lp.y on a floating dialog and landed too low); rows 50dp, text 15sp.
+Delivery 13 (UNVERIFIED by compile): start page = Soul home. StartPage.kt rewritten: header bar (position 0, arrow + open group
+  path, tap = jump to Home / any group / New group), group tiles with 2x2 favicon preview (dialMini GridLayout in item_dial.xml),
+  groups open in place (pathIdx stack, MainActivity back handler calls dialAdapter.goUp()), long-press drag to reorder
+  (ItemTouchHelper in DialAdapter.attach), drop a shortcut on a group to move it in, long-press without moving = menu
+  (edit / move to group / move up one level / delete; groups: open / rename / ungroup / delete). Tiles are 44dp like Soul (were 58dp).
+  Item positions are offset by 1 (header) in the adapter. Not done: dragging out of a group by drag (use menu), dropping a shortcut
+  on another shortcut to create a group (use Move to group > New group).
+
+Delivery 14 (UNVERIFIED by compile; build log is the test):
+- Customize Theme, copied from the user's OnlyPlay video player (OnlyPlay CustomizeThemeScreen/CustomBackground): new ThemeBg.kt (engine)
+  and ThemeActivity.kt (screen, built in code). Settings > Display > "Customize theme". Options: no background / own picture /
+  9 built-in wallpapers (res/drawable-nodpi/wall_1..9.jpg, default wall:1) + accent Color dots + Transparency, Blur, Dark overlay
+  (0-100, -/+ steppers, live preview). Prefs keys: ThemeBg.MODE/VER/TRANS/BLUR/DIM/ACCENT (defaults in Prefs.DEFAULTS: wall:1, 70, 0, 40, 0).
+  ThemeBg.apply(activity) sets the window background (picture + dark overlay, blur = down-scale + box blur), makes root transparent,
+  status/nav bars transparent, and softens bar/card backgrounds (alpha = 1 - transparency*0.6, same formula as OnlyPlay). It also hooks
+  RecyclerViews (OnChildAttachStateChangeListener) so list items get softened. Views tagged ThemeBg.NOSOFT are skipped.
+  Called from MainActivity.applyThemeBg (onCreate + onResume), SettingsActivity, DownloadsActivity, LibraryActivity, LayoutActivity,
+  MenuEditorActivity. Accent colour: recolours TextViews that use accent/accent_dark/value, progress bar and pull-to-refresh.
+  Not themed: PlayerActivity, popup dialogs created in Ui.kt.
+- Default font = Source Code Pro (res/font/source_code_pro.ttf, also assets/fonts/): set as android:fontFamily in every style in
+  values/themes.xml and values-night/themes.xml, plus alertDialogTheme = OrbitAlert. Web pages: MainActivity.fontJs injects the font
+  (FontFace from base64 + adoptedStyleSheets, so page CSP does not block it); icon fonts are excluded by selector.
+  Switch: Settings > Display > "App font on websites" (key web_font, default on).
+- Websites not loading fully, fixed: (1) WebView UA no longer contains "; wv" / "Version/x.y"; (2) ad blocker list no longer blocks
+  analytics/SDK hosts sites depend on (google-analytics, googletagmanager, facebook.net, hotjar, etc.); blocked requests now get an
+  empty answer with a matching MIME type + CORS header; (3) "Remove overlays" JS (off by default) only removes true full-screen
+  fixed modals instead of any big fixed element; (4) databaseEnabled, onCloseWindow closes popup tabs, cookies flushed in onPause.
+- Typeface: setTypeface(null, style) calls replaced so the custom font is kept.
 Not done (next): tab switcher and Library screens to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 

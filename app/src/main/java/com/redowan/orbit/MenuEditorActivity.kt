@@ -42,6 +42,7 @@ class MenuEditorActivity : AppCompatActivity() {
 
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(color(R.color.bg)) }
         setContentView(root)
+        ThemeBg.apply(this)
 
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), 0, dp(12), 0) }
         header.addView(iconBtn("outline_keyboard_arrow_left", "Back") { onBack() })

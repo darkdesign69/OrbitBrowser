@@ -13,15 +13,13 @@ object AdBlocker {
 
     private val BUILTIN = setOf(
         "doubleclick.net", "googlesyndication.com", "googleadservices.com", "adservice.google.com",
-        "google-analytics.com", "googletagmanager.com", "googletagservices.com", "2mdn.net",
+        "googletagservices.com", "2mdn.net",
         "adnxs.com", "adsrvr.org", "advertising.com", "amazon-adsystem.com", "criteo.com",
         "criteo.net", "exoclick.com", "mgid.com", "moatads.com", "openx.net", "outbrain.com",
         "popads.net", "popcash.net", "propellerads.com", "pubmatic.com", "rubiconproject.com",
-        "scorecardresearch.com", "taboola.com", "teads.tv", "yieldmo.com", "adform.net",
+        "taboola.com", "teads.tv", "yieldmo.com", "adform.net",
         "smartadserver.com", "casalemedia.com", "contextweb.com", "lijit.com", "sharethrough.com",
-        "33across.com", "bidswitch.net", "media.net", "revcontent.com", "zedo.com", "quantserve.com",
-        "hotjar.com", "mixpanel.com", "segment.io", "amplitude.com", "branch.io", "adjust.com",
-        "appsflyer.com", "app-measurement.com", "facebook.net", "connect.facebook.net",
+        "33across.com", "bidswitch.net", "revcontent.com", "zedo.com",
         "ads.twitter.com", "analytics.twitter.com", "ads.linkedin.com", "ads.yahoo.com",
         "adcolony.com", "unityads.unity3d.com", "applovin.com", "chartboost.com", "vungle.com",
         "inmobi.com", "mopub.com", "juicyads.com", "trafficjunky.net", "adsterra.com",

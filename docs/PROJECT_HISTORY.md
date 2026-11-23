@@ -29,6 +29,12 @@
    and bottom icon row fixed while the list scrolls (Orbit scrolled everything), and Orbit's menu sat lower and was bigger.
    Fixed as described in HANDOFF.md "Delivery 12". Measurements: Soul pill ~87px = 33dp at 2.625 density, tab 58px x 302px,
    menu 62% of screen width, row ~54dp, top row starts ~24dp below toolbar top and bottom row is icon only.
+8. Delivery 13: user confirmed delivery 12 works and asked for the next step; chose "All" for the home screen (taken as the full Soul
+   home). See HANDOFF.md "Delivery 13".
+9. Delivery 14: user said the repo copy was older than orbit-full__14_ (use the zip, not the repo). Asked for: wallpaper images as
+   home-screen background (9 images supplied, used as defaults), the OnlyPlay "Customize theme" features (wallpaper, colour,
+   transparency, blur, dark overlay) working the same way in the browser, SourceCodePro-Regular.ttf as default font for the whole
+   app and every website, and a fix for websites that do not load fully. See HANDOFF.md "Delivery 14".
 
 ## 4. Reverse-engineering method (no apktool available)
 - Python decoders in tools/soul/: axml (binary XML), resources.arsc, DEX reader, page scanner (decode_all.py, pages.py).

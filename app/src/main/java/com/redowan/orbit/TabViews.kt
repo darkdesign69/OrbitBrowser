@@ -93,7 +93,7 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         TabStyle.style(h.itemView, selected, pf.bool(K.TAB_OUTLINE), pf.int(K.TAB_COLOR),
             pf.bool(K.TAB_CLOSE_BTN), pf.int(K.TAB_W_PCT), pf.int(K.TAB_H_PCT))
         h.title.text = t.label()
-        h.title.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        h.title.setTypeface(h.title.typeface, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         h.icon.setTabIcon(t)
         h.itemView.setOnClickListener {
             val p = h.bindingAdapterPosition

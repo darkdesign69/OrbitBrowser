@@ -49,6 +49,7 @@ class LayoutActivity : AppCompatActivity() {
             setBackgroundColor(color(R.color.bg))
         }
         setContentView(root)
+        ThemeBg.apply(this)
 
         // header: back | title | position | reset | apply
         val header = LinearLayout(this).apply {

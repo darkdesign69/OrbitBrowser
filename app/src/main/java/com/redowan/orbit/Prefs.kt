@@ -289,6 +289,13 @@ class Prefs(context: Context) {
             K.LAY_TAB_W to 156,
             K.LAY_BOT_H to 52,
             K.LAY_COLS to 4,
+            ThemeBg.MODE to "wall:1",
+            ThemeBg.VER to 0,
+            ThemeBg.TRANS to 70,
+            ThemeBg.BLUR to 0,
+            ThemeBg.DIM to 40,
+            ThemeBg.ACCENT to 0,
+            ThemeBg.WEB_FONT to true,
             K.MENU_QUICK to MenuCat.DEFAULT_QUICK,
             K.MENU_LIST to MenuCat.DEFAULT_LIST,
             K.MENU_BOTTOM to MenuCat.DEFAULT_BOTTOM

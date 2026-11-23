@@ -116,7 +116,10 @@ class MainActivity : AppCompatActivity() {
     private val stripAdapter by lazy { TabStripAdapter(this) }
     private val dialAdapter by lazy { DialAdapter(this) }
 
-    private val defaultUa by lazy { WebSettings.getDefaultUserAgent(this) }
+    private val defaultUa by lazy {
+        // the plain WebView UA contains "; wv" and "Version/x.y", which makes many sites serve a broken or limited page
+        WebSettings.getDefaultUserAgent(this).replace("; wv", "").replace(Regex(" Version/\\d+\\.\\d+"), "")
+    }
     private val upgraded = HashMap<Tab, String>()
     private var barsShown = true
     private var barAcc = 0
@@ -176,11 +179,13 @@ class MainActivity : AppCompatActivity() {
         tabStrip.adapter = stripAdapter
         startList.layoutManager = GridLayoutManager(this, 4)
         startList.adapter = dialAdapter
+        dialAdapter.attach(startList)
         webHolder.setColorSchemeResources(R.color.accent_dark)
         webHolder.setOnRefreshListener { cur.web?.reload() ?: run { webHolder.isRefreshing = false } }
         webHolder.setOnChildScrollUpCallback { _, _ -> (cur.web?.scrollY ?: 0) > 0 }
 
         wireClicks()
+        applyThemeBg()
         WebView.setWebContentsDebuggingEnabled(prefs.bool(K.DEBUG_WEB))
         restoreTabs()
         if (prefs.bool(K.KEYBOARD_START) && cur.home) urlField.post { urlField.requestFocus(); urlField.showKeyboard() }
@@ -191,6 +196,7 @@ class MainActivity : AppCompatActivity() {
                 when {
                     customView != null -> hideCustomView()
                     findBar.visibility == View.VISIBLE -> closeFind()
+                    cur.home && dialAdapter.goUp() -> {}
                     cur.web?.canGoBack() == true && !cur.home -> cur.web?.goBack()
                     !cur.home && tabs.size == 1 && prefs.int(K.BACK_LAST) == 0 -> {
                         if (prefs.bool(K.LAST_NOTI)) toast("This is the last page of the tab.")
@@ -225,6 +231,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkLock()
         applyPrefs()
+        applyThemeBg()
         cur.web?.onResume()
     }
 
@@ -232,6 +239,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         lastPause = SystemClock.elapsedRealtime()
         cur.web?.onPause()
+        CookieManager.getInstance().flush()
         saveSession()
     }
 
@@ -519,6 +527,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Orientation, brightness, screen-on and full screen from Settings > Display / Composition. */
+    /** Wallpaper behind the bars and start page, see [ThemeBg]. */
+    private fun applyThemeBg() {
+        val on = ThemeBg.isActive(this, prefs)
+        val barBg = if (on) color(R.color.bg) else Color.TRANSPARENT
+        for (id in intArrayOf(R.id.addrRow, R.id.tabBarRow, R.id.navRow)) findViewById<View>(id)?.setBackgroundColor(barBg)
+        ThemeBg.apply(this)
+        val acc = ThemeBg.accent(this, prefs)
+        if (acc != null) {
+            findViewById<android.widget.ProgressBar>(R.id.progress)?.progressTintList = android.content.res.ColorStateList.valueOf(acc)
+            webHolder.setColorSchemeColors(acc)
+        } else {
+            webHolder.setColorSchemeResources(R.color.accent_dark)
+        }
+    }
+
     private fun applyDisplayPrefs() {
         requestedOrientation = when (prefs.int(K.ROTATION)) {
             1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -930,6 +953,7 @@ class MainActivity : AppCompatActivity() {
         w.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
             setSupportMultipleWindows(true)
             javaScriptCanOpenWindowsAutomatically = true
             builtInZoomControls = true
@@ -969,7 +993,7 @@ class MainActivity : AppCompatActivity() {
             if (prefs.adBlock && !req.isForMainFrame && !prefs.siteHas(K.SITE_AD_OFF, tab.host) &&
                 AdBlocker.isBlocked(req.url.host)
             ) {
-                return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+                return blockedResponse(req.url.toString())
             }
             return null
         }
@@ -988,6 +1012,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun onPageCommitVisible(view: WebView, url: String?) {
             injectPageDark(view)
+            injectFont(view)
         }
 
         override fun onPageFinished(view: WebView, url: String?) {
@@ -999,6 +1024,7 @@ class MainActivity : AppCompatActivity() {
                 store.addHistory(Entry(tab.title, tab.url!!))
             }
             injectPageDark(view)
+            injectFont(view)
             if (prefs.bool(K.MEDIA_DETECT)) {
                 view.postDelayed({ scanMedia(tab) }, 800)
                 view.postDelayed({ scanMedia(tab) }, 3500)
@@ -1087,6 +1113,43 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    /** Empty answer for a blocked request, with a matching type so pages do not choke on it. */
+    private fun blockedResponse(url: String): WebResourceResponse {
+        val name = url.substringBefore('?').substringAfterLast('/').lowercase()
+        val mime = when {
+            name.endsWith(".js") -> "application/javascript"
+            name.endsWith(".css") -> "text/css"
+            name.endsWith(".png") -> "image/png"
+            name.endsWith(".gif") -> "image/gif"
+            name.endsWith(".jpg") || name.endsWith(".jpeg") -> "image/jpeg"
+            name.endsWith(".json") -> "application/json"
+            else -> "text/plain"
+        }
+        return WebResourceResponse(mime, "utf-8", 200, "OK", mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(ByteArray(0)))
+    }
+
+    /** Script that gives every web page the Orbit font (Source Code Pro). Icon fonts are left alone. */
+    private val fontJs: String by lazy {
+        try {
+            val b64 = android.util.Base64.encodeToString(
+                assets.open("fonts/SourceCodePro-Regular.ttf").use { it.readBytes() }, android.util.Base64.NO_WRAP
+            )
+            "(function(){if(window.__orbitFont)return;window.__orbitFont=1;try{var b=atob('" + b64 + "');" +
+                "var a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);" +
+                "var f=new FontFace('OrbitMono',a.buffer);document.fonts.add(f);f.load();" +
+                "var css='html,body,body *:not(i):not(svg):not(svg *):not([class*=icon i]):not([class*=fa-]):not([class^=fa]):not([class*=material i]):not([class*=glyph i]){font-family:OrbitMono,monospace !important}';" +
+                "var s=new CSSStyleSheet();s.replaceSync(css);" +
+                "document.adoptedStyleSheets=Array.from(document.adoptedStyleSheets).concat([s]);}catch(e){}})()"
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun injectFont(view: WebView) {
+        if (!prefs.bool(ThemeBg.WEB_FONT) || fontJs.isEmpty()) return
+        view.evaluateJavascript(fontJs, null)
+    }
+
     private fun injectPageDark(view: WebView) {
         if (!prefs.pageDark) {
             view.evaluateJavascript("var e=document.getElementById('orbit-dark');if(e)e.remove();", null)
@@ -1155,6 +1218,11 @@ class MainActivity : AppCompatActivity() {
             transport.webView = nw
             resultMsg.sendToTarget()
             return true
+        }
+
+        override fun onCloseWindow(window: WebView) {
+            val i = tabs.indexOf(tab)
+            if (i >= 0 && tabs.size > 1) closeTab(i)
         }
 
         override fun onPermissionRequest(request: android.webkit.PermissionRequest) = request.deny()
@@ -1979,8 +2047,8 @@ class MainActivity : AppCompatActivity() {
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         private const val OVERLAY_JS =
             "(function(){var n=0;[].forEach.call(document.querySelectorAll('body *'),function(e){var s=getComputedStyle(e);" +
-                "if((s.position==='fixed'||s.position==='sticky')&&parseInt(s.zIndex||'0')>=100&&" +
-                "e.offsetHeight>window.innerHeight*0.25&&e.offsetWidth>window.innerWidth*0.5){e.remove();n++}});" +
+                "if(s.position==='fixed'&&parseInt(s.zIndex||'0')>=1000&&!e.querySelector('video,input,textarea,[contenteditable]')&&" +
+                "e.offsetHeight>=window.innerHeight*0.9&&e.offsetWidth>=window.innerWidth*0.9){e.remove();n++}});" +
                 "document.documentElement.style.overflow='auto';if(document.body)document.body.style.overflow='auto';return n})()"
 
         private const val READER_JS =

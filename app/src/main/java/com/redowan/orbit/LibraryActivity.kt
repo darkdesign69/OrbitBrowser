@@ -35,6 +35,7 @@ class LibraryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         store = Store(this)
         setContentView(R.layout.activity_library)
+        ThemeBg.apply(this)
         list = findViewById(R.id.libList)
         empty = findViewById(R.id.libEmpty)
         list.layoutManager = LinearLayoutManager(this)

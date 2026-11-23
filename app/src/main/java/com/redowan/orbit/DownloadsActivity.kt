@@ -51,6 +51,7 @@ class DownloadsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_downloads)
+        ThemeBg.apply(this)
         dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         findViewById<View>(R.id.dlBack).setOnClickListener { finish() }
         findViewById<View>(R.id.dlSettings).setOnClickListener {

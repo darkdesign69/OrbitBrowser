@@ -181,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         webHolder.setOnChildScrollUpCallback { _, _ -> (cur.web?.scrollY ?: 0) > 0 }
 
         wireClicks()
+        WebView.setWebContentsDebuggingEnabled(prefs.bool(K.DEBUG_WEB))
         restoreTabs()
         if (prefs.bool(K.KEYBOARD_START) && cur.home) urlField.post { urlField.requestFocus(); urlField.showKeyboard() }
         handleIntent(intent)
@@ -397,6 +398,22 @@ class MainActivity : AppCompatActivity() {
             else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         }
         window.attributes = lp
+        val deco = window.decorView as ViewGroup
+        var filter = deco.findViewWithTag<View>("orbit_filter")
+        val level = prefs.int(K.SCREEN_FILTER)
+        if (level > 0) {
+            if (filter == null) {
+                filter = View(this).apply {
+                    tag = "orbit_filter"
+                    isClickable = false; isFocusable = false
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                }
+                deco.addView(filter)
+            }
+            val alpha = when (level) { 1 -> 40; 2 -> 90; else -> 140 }
+            filter.setBackgroundColor((prefs.int(K.FILTER_COLOR) and 0x00FFFFFF) or (alpha shl 24))
+            filter.bringToFront()
+        } else if (filter != null) deco.removeView(filter)
         if (customView == null) {
             val c = WindowInsetsControllerCompat(window, window.decorView)
             if (prefs.bool(K.FULLSCREEN)) {
@@ -437,7 +454,16 @@ class MainActivity : AppCompatActivity() {
         val idx = if (prefs.tabNext && tabs.isNotEmpty()) (current + 1).coerceAtMost(tabs.size) else tabs.size
         tabs.add(idx, t)
         current = idx
-        if (url.isNullOrEmpty()) showTab() else navigate(t, url)
+        val target = when {
+            !url.isNullOrEmpty() -> url
+            incognito -> null
+            prefs.int(K.NEW_TAB) == 1 && prefs.homepage.isNotEmpty() -> prefs.homepage
+            prefs.int(K.NEW_TAB) == 2 -> "about:blank"
+            else -> null
+        }
+        if (target == null) showTab() else navigate(t, target)
+        if (prefs.bool(K.KEYBOARD_ADD) && target == null) urlField.post { urlField.requestFocus(); urlField.showKeyboard() }
+        enforceTabLimit()
     }
 
     fun select(p: Int) {
@@ -506,7 +532,7 @@ class MainActivity : AppCompatActivity() {
             current = idx.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
         }
         if (tabs.isEmpty()) tabs.add(Tab(null))
-        showTab()
+        if (!prefs.keepTabs && prefs.homepage.isNotEmpty()) { current = 0; navigate(tabs[0], prefs.homepage) } else showTab()
     }
 
     private fun saveSession() {
@@ -549,11 +575,21 @@ class MainActivity : AppCompatActivity() {
         enforceTabLimit()
     }
 
-    /** Settings > Memory saving: keep at most N tabs loaded, release the ones farthest from the current tab. */
+    /** Settings > Memory saving: open limit closes the oldest tabs, memory limit releases the farthest loaded ones. */
     private fun enforceTabLimit() {
+        val open = prefs.int(K.TAB_OPEN_LIMIT)
+        if (open > 0) {
+            while (tabs.size > open) {
+                val victim = tabs.firstOrNull { it !== cur } ?: break
+                val i = tabs.indexOf(victim)
+                tabs.removeAt(i); destroyTab(victim)
+                if (i < current) current--
+            }
+            stripAdapter.notifyDataSetChanged()
+        }
         val limit = prefs.int("mem_tab_limit")
         if (limit <= 0) return
-        val live = tabs.filter { it.web != null && it !== cur && !it.incognito }
+        val live = tabs.filter { it.web != null && it !== cur && !it.incognito && !prefs.siteHas(K.MEM_KEEP, it.host) }
         val loaded = tabs.count { it.web != null }
         val excess = loaded - limit
         if (excess <= 0) return
@@ -602,6 +638,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goHome() {
+        if (prefs.bool(K.HOME_CLOSE_ALL) && tabs.size > 1) closeWhere { it !== cur }
         val hp = prefs.homepage
         if (hp.isNotEmpty()) { navigate(cur, hp); return }
         val t = cur

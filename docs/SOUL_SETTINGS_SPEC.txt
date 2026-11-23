@@ -1,0 +1,308 @@
+## SettingAdvanced; D0
+  "Allows the site to store or read cookies." | "Some sites may not function properly if you do not accept cookies." | "Some browser features will not work if JavaScript is disabled." | "Please be careful when using it." | "Data saving" | "Some sites may not be supported." | <PrefPdf.q> | "Web page preload" | "This feature uses more memory." | <PrefZone.v> | "Disable Google AMP" | "Disable Google AMP in Google search results." | <PrefPdf.r> | "Cookies accepted (Recommended)" | <PrefWeb.F> | "Third party cookies" | <PrefWeb.G> | "Using JavaScript (Recommended)" | <PrefWeb.H> | "JavaScript blacklist" | "You can register sites that block JavaScript." | "Connect with HTTPS" | "By default it connects with HTTPS. Sites that do not support HTTPS may not be able to connect." | <PrefPdf.p> | "SSL error blocking" | "When an SSL error occurs, the page automatically goes to a safe page." | <PrefPdf.s> | "Web debugging" | "You can debug with USB." | <PrefPdf.t>
+## SettingBackup$10; onSuccess
+  "Fail" | "Fail"
+## SettingBackup$3; a
+  "Would you like to remove access to your account?" | "Remove permission"
+## SettingBackup; D0
+  [icon:outline_sd_card_dark_24] | [icon:outline_drive_dark_24] | [icon:outline_sd_card_black_24] | [icon:outline_drive_black_24] | "Storage" | "Import" | "Export" | "Import" | "Export"
+## SettingBackup; O0
+  "Fail" | "Fail"
+## SettingBackup; j0
+  "Invalid path" | "Invalid path" | "Invalid file" | "Invalid file" | "Invalid file"
+## SettingCast; D0
+  "(Web streaming)" | "Video" | "Image" | <PrefMain.q> | [icon:outline_help_dark_20] | [icon:outline_help_black_20] | <PrefMain.q> | "Repeat play" | <PrefMain.r> | "Local file" | [icon:outline_live_tv_dark_24] | "Subtitle" | [icon:outline_subtitles_dark_24] | [icon:baseline_play_arrow_dark_24] | [icon:outline_image_dark_24] | [icon:outline_live_tv_black_24] | "Subtitle" | [icon:outline_subtitles_black_24] | [icon:baseline_play_arrow_black_24] | [icon:outline_image_black_24]
+## SettingClean$3; onClick
+  <PrefAlbum.p> | <PrefAlbum.p> | KEY:mNotiClea2 | "Ad blocker" | "Element inspection" | "Block area" | "Overlay blocker"
+## SettingClean$7; b
+  "If you have a site that doesn't block ads, add an appropriate filter." | "Adding filters increases memory usage." | "We recommend that you only add filters that are appropriate for you." | "This feature uses a lot of resources because it analyzes every element of the web page." | "If you want faster performance, disable this option." | "Removes elements that appear above the screen of a web page." | "Although primarily advertising, non-advertising elements may also be removed." | "It is applied very lightly so that non-advertising elements are not removed." | "Block area" | "Try using the '%s' feature." | "The '%s' feature allows you to directly select what you want to block."
+## SettingClean; <clinit>
+  "Not used" | "Check once" | "Keep checking" | "Check only when the page changes." | "This feature uses more resources." | "Weak" | "Normal" | "Strong" | "Block only popups that are suspected as ads" | "Block when other sites are opened (including advertising sites)" | "Block all popups" | "Open in browser" | "Always blocked"
+## SettingClean; D0
+  "Element inspection" | "(more fine-grained blocking)" | "This feature uses more memory." | <PrefWeb.o> | "Ad blocker" | "At least one filter must be active to block ads." | <PrefWeb.o> | <PrefTts.t> | "Ad filter" | "Ad whitelist" | "You can register sites where ads are allowed." | "Block area" | "Long press on the object you want to block and a menu will appear." | <PrefWeb.p> | "Overlay blocker" | <PrefTts.u> | "Overlay Whitelist" | "You can register sites where overlays are allowed." | "Popup blocker" | <PrefWeb.q> | "Popup whitelist" | "You can register sites where popups are allowed." | "Block app execution" | <PrefPdf.w> | "Blocked Links" | "Lock screen" | <PrefSecret.B> | "Blocked images"
+## SettingClean; P0
+  <PrefPdf.w> | "Block the site from running other apps." | <PrefPdf.w> | "If site information is available, open the site."
+## SettingClean; S0
+  "Ad whitelist" | "Overlay Whitelist" | "Popup whitelist" | "Blocked Links" | "Blocked images" | "Ad filter"
+## SettingCustom$4; a
+  <PrefZtwo.D> | KEY:mScrollAnim | <PrefZone.B> | KEY:mVolScroll | <PrefZone.x> | <PrefZone.z> | KEY:mPullRefresh | <PrefZtri.H> | KEY:mHandIcon | <PrefZtwo.a0> | KEY:mRecentSecret | <PrefSync.k> | "Do not save" | "Unlimited" | "Settings" | <PrefZtwo.B> | KEY:mAutoComp | <PrefWeb.V> | <PrefWeb.W> | <PrefPdf.H>
+## SettingCustom; <clinit>
+  "Domain" | "URL" | "Title"
+## SettingCustom; D0
+  <PrefZtwo.Z> | <PrefEditor.P> | <PrefEditor.O> | "Full screen and Toolbar" | "Landscape mode" | "Floating button" | "Address bar label" | <PrefPdf.H> | "Search bar button" | "Search suggestions" | "Auto complete" | <PrefZtwo.B> | "Recent searches" | <PrefZtwo.Z> | "Save recent searches in incognito mode" | <PrefZtwo.a0> | "One-handed mode button" | "You can move the button by dragging it." | <PrefZtri.H> | "Button color" | "Area size" | "Pull to refresh" | <PrefZone.z> | "Back to top button" | "Show scroll bar" | <PrefZone.x> | "Scroll web pages with volume keys" | <PrefZone.B> | "Use scroll animation" | <PrefZtwo.D>
+## SettingCustom; O0
+  "Unlimited" | "Do not save"
+## SettingCustom; P0
+  <PrefWeb.V> | <PrefWeb.W> | "DuckDuckGo" | "Google" | <PrefWeb.W> | "Recent searches" | <PrefWeb.W> | "History" | <PrefWeb.W> | "Bookmark" | <PrefWeb.W> | "Shortcuts"
+## SettingDisplay$5; a
+  <PrefMain.l> | <PrefPdf.m> | <PrefEditor.z> | <PrefWeb.U> | KEY:mDarkHome | <PrefWeb.O> | <PrefWeb.N> | <PrefWeb.M> | KEY:mThemeImg | <PrefWeb.M> | "Image brightness" | <PrefWeb.N> | <PrefWeb.J> | KEY:mThemeSys | <PrefWeb.J> | <PrefWeb.K> | "Web page" | <PrefWeb.L>
+## SettingDisplay$8; b
+  <PrefWeb.O> | <PrefWeb.O> | KEY:mThemeHead | <PrefWeb.O> | "If the site you visit supports themes, it applies to browser." | "Header" | <PrefWeb.O> | "Header color" | <PrefWeb.Q>
+## SettingDisplay; <clinit>
+  "Light" | "Dark" | "Not used" | "Site theme" | "Custom" | "System" | "Portrait" | "Landscape"
+## SettingDisplay; D0
+  <PrefWeb.J> | <PrefWeb.K> | <PrefWeb.M> | <PrefWeb.O> | "If the site you visit supports themes, it applies to browser." | <PrefEditor.B> | <PrefEditor.A> | <PrefPdf.n> | <PrefPdf.o> | "System" | "Depends on system setting" | <PrefMain.l> | "Depends on system setting" | "Web page" | <PrefWeb.L> | "Depends on system setting" | <PrefWeb.J> | "Dark image" | "Applies only when the webpage is in dark mode." | <PrefWeb.M> | "Image brightness" | <PrefWeb.N> | "Header" | <PrefWeb.O> | "Header color" | <PrefWeb.Q> | "Dark mode Home" | "When you set a wallpaper, your homepage will always be in dark mode." | <PrefWeb.U> | "Screen filter" | <PrefEditor.z> | "Filter color" | "Brightness" | "Screen timeout" | <PrefPdf.m> | <PrefPdf.m> | "Screen rotation" | <PrefMain.l>
+## SettingDisplay; R0
+  <PrefPdf.n> | <PrefPdf.o> | "System" | "Depends on system setting"
+## SettingDown$3; onClick
+  "Sometimes when you download a file, the overall size of the file keeps changing." | "This is because this is the estimated size of the file, not the actual size of the file." | "There is no difference in the download results."
+## SettingDown$5; a
+  "Download" | "Permission denied or app not installed." | "Permission denied or app not installed." | <PrefZone.l0> | KEY:mNotiDown | "Do not allow" | "Unlimited" | "Settings" | "Direct selection" | "Default" | "Other apps"
+## SettingDown; D0
+  <PrefAlbum.G> | <PrefAlbum.G> | "Default" | "If the number of downloads exceeds the limit, it will be queued." | "Downloading too many files at the same time can slow device and cause problems." | "If the time limit is exceeded while the app is in the background, downloads will be paused to save battery." | "The timer is released when the app goes to the foreground." | "Download manager" | "Download location" | "Fast download" | <PrefZone.j0> | "Some sites may not be supported." | "Number of retries" | <PrefZone.k0> | "Number of retries in case of connection failure" | "Concurrent download" | <PrefWeb.X> | "Background state timeout" | <PrefWeb.Y> | "hours" | "Download completion notification" | <PrefZone.l0> | "Report site" | "Please provide the address of the site where the video can not be downloaded." | "Due to YouTube policy, YouTube videos can not be downloaded."
+## SettingDown; O0
+  "Unlimited" | "Do not allow"
+## SettingDown; j0
+  "Invalid path" | "Invalid path" | <PrefPath.r> | <PrefPath.r>
+## SettingFloat$4; a
+  <PrefFloat.o> | KEY:mFlt3Show | <PrefFloat.n> | KEY:mFlt2Show | <PrefFloat.m> | KEY:mFlt1Show | "Change" | "Not used"
+## SettingFloat$8; a
+  <PrefFloat.q> | <PrefFloat.p> | "Button color" | <PrefFloat.u> | <PrefFloat.t> | "Button color" | <PrefFloat.y> | <PrefFloat.x> | "Button color"
+## SettingFloat; D0
+  <PrefFloat.q> | <PrefFloat.p> | <PrefFloat.u> | <PrefFloat.t> | <PrefFloat.y> | <PrefFloat.x> | <PrefFloat.j> | "You can move the button by dragging it." | "Button color" | "Always visible" | <PrefFloat.m> | <PrefFloat.k> | "You can move the button by dragging it." | "Button color" | "Always visible" | <PrefFloat.n> | <PrefFloat.l> | "You can move the button by dragging it." | "Button color" | "Always visible" | <PrefFloat.o>
+## SettingFont$4; onClick
+  "Each font has a set of supported languages." | "Most fonts usually only support alphabets and numbers." | "Check the preview to see if the selected font supports the specific language."
+## SettingFont$UserTask; e
+  "%d files found" | "There are no files."
+## SettingFont; j0
+  "Invalid path" | "Invalid path" | <PrefPath.v> | <PrefPath.v> | KEY:mScanFont | "Directory is being scanned."
+## SettingFont; onCreate
+  <PrefRead.o> | <PrefRead.p> | <PrefZone.l> | <PrefZone.m> | "Font" | "Reader mode" | "Web page" | "Default font" | "Boldface" | "System" | "Storage"
+## SettingGeneral; D0
+  "Depends on system setting" | "Language resource" | "Set as default browser" | "Notification" | "Language" | "Keyboard activation on app startup" | <PrefTts.w> | "Back button twice to app exit" | <PrefMain.m> | "Create a PDF shortcut" | "Create a PDF shortcut button on the home screen."
+## SettingGeneral; Q0
+  "PDF" | "TV Cast"
+## SettingGesture$4; a
+  <PrefWeb.E> | KEY:mTabMulti | "Change" | "Not used"
+## SettingGesture; D0
+  "Swipe" | "Up" | "Down" | "Left" | "Right" | "Tab gesture" | "(Two fingers)" | "Swipe left and right with two fingers to move tab." | "Swipe down with two fingers to remove tab." | [icon:outline_arrow_range_dark_24] | "Swipe sensitivity" | [icon:outline_subdirectory_arrow_up_left_dark_24] | <PrefZone.X> | [icon:outline_subdirectory_arrow_up_right_dark_24] | <PrefZone.Y> | [icon:outline_subdirectory_arrow_left_dark_24] | <PrefZone.Z> | [icon:outline_subdirectory_arrow_right_dark_24] | <PrefZone.a0> | [icon:outline_arrow_range_black_24] | "Swipe sensitivity" | [icon:outline_subdirectory_arrow_up_left_black_24] | <PrefZone.X> | [icon:outline_subdirectory_arrow_up_right_black_24] | <PrefZone.Y> | [icon:outline_subdirectory_arrow_left_black_24] | <PrefZone.Z> | [icon:outline_subdirectory_arrow_right_black_24] | <PrefZone.a0> | <PrefWeb.E>
+## SettingHandArea$4; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingHome$1; run
+  [icon:outline_chevron_left_dark_24] | [icon:outline_check_dark_24] | [icon:outline_cancel_dark_18] | [icon:outline_more_vert_dark_24] | [icon:selector_normal_dark] | [icon:selector_normal_dark] | [icon:outline_chevron_left_black_24] | [icon:outline_check_black_24] | [icon:outline_cancel_black_18] | [icon:outline_more_vert_black_24] | [icon:selector_normal_gray] | [icon:selector_normal_gray] | <PrefWeb.k> | <PrefWeb.l> | <PrefWeb.m> | <PrefWeb.k> | "Soul homepage" | "Current page" | "Blank page"
+## SettingHome; onCreate
+  "Home page" | "Start page" | "New tab" | [icon:edit_cursor] | "URL" | "Bookmark" | "History"
+## SettingImage; D0
+  "Thumbnail preview" | "If you want faster performance, disable this option." | <PrefImage.m> | "Page turn guide" | <PrefImage.n> | "Tap to turn pages" | "Volume keys to turn pages" | <PrefImage.o> | "Screen timeout" | <PrefImage.p> | <PrefImage.p>
+## SettingImageTap$1; run
+  [icon:outline_chevron_left_dark_24] | [icon:outline_replay_dark_20] | [icon:outline_check_dark_20] | [icon:outline_chevron_left_black_24] | [icon:outline_replay_black_20] | [icon:outline_check_black_20] | "Landscape" | "Portrait" | [icon:selector_normal_dark] | [icon:selector_normal] | [icon:outline_swipe_hori] | [icon:outline_swipe_hori] | <PrefImage.j>
+## SettingImageTap$3; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingImageTap$5; onClick
+  "Move page" | "Not used"
+## SettingImageTap$9; run
+  <PrefImage.j> | [icon:round_guide_8] | "1. Click the area to change the function." | "2. Drag the area to change the size." | "You can set landscape mode and portrait mode differently." | "To set landscape mode, rotate your device horizontally."
+## SettingImageTap; onConfigurationChanged
+  "Landscape" | "Portrait"
+## SettingInfo$4; a
+  "Blog" | "Privacy Policy" | "Terms of Service"
+## SettingInfo; D0
+  "App version" | "Terms of Service" | "Privacy Policy" | "Open source licenses" | "Frequently asked questions" | "Blog"
+## SettingInfoLegalView; onCreate
+  "Terms of Service" | "Privacy Policy"
+## SettingInfoLicenseList$2; onClick
+  "Thanks to the open source developers. ❤" | "OK"
+## SettingLand$4; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingLayout$13; onClick
+  "Up" | "Down"
+## SettingLayout$24; run
+  <PrefRead.v> | [icon:round_guide_8] | "1. You can move by pressing and holding the icon." | "2. You can change it by clicking the icon." | "To remove the top bar, delete all icons from the top bar."
+## SettingLayout$3; onClick
+  "Layout" | "Long press" | "Swipe up"
+## SettingLayout$4; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingLayout; F0
+  "Not enough space." | "Not enough space."
+## SettingLayout; N0
+  "Long press" | "You can set the function to use when you press and hold the icon on the bottom bar." | "Swipe up" | "You can set the function to use when swiping up the icon on the bottom bar."
+## SettingLayout; P0
+  "Are you sure you want to delete all?" | "Delete all"
+## SettingLayout; Q0
+  <PrefRead.w> | "Space" | "Spaces are not visible on the running screen."
+## SettingLayout; U0
+  "Down" | "Up" | "Delete" | "Down" | "Up" | "Down" | "Up" | "Change" | "Delete" | "Change" | "Delete"
+## SettingLayout; onCreate
+  <PrefMain.B> | <PrefMain.C> | <PrefMain.D> | <PrefMain.E> | <PrefPdf.z> | "Layout" | "Not used" | "Not used" | "Address bar" | "Not used"
+## SettingMain$5; a
+  "Send feedback" | "Permission denied or app not installed." | "Permission denied or app not installed." | "Soul" | <PrefSecret.z> | <PrefSecret.s> | <PrefSecret.u> | <PrefSync.k> | <PrefSecret.s> | <PrefSecret.u> | <PrefSync.k>
+## SettingMain; O0
+  "Language resource" | "Set as default browser" | "Notification" | "Language" | "Keyboard activation on app startup" | "Back button twice to app exit" | "Create a PDF shortcut" | "Create a PDF shortcut button on the home screen." | "Allows the site to store or read cookies." | "Some sites may not function properly if you do not accept cookies." | "Some browser features will not work if JavaScript is disabled." | "Please be careful when using it." | "Data saving" | "Some sites may not be supported." | "Web page preload" | "This feature uses more memory." | "Disable Google AMP" | "Disable Google AMP in Google search results." | "Cookies accepted (Recommended)" | "Third party cookies" | "Using JavaScript (Recommended)" | "JavaScript blacklist" | "You can register sites that block JavaScript." | "Connect with HTTPS" | "By default it connects with HTTPS. Sites that do not support HTTPS may not be able to connect." | "SSL error blocking" | "When an SSL error occurs, the page automatically goes to a safe page." | "Web debugging" | "You can debug with USB." | "Long press" | "Link" | "Image" | "Home page" | "When you tap the home icon" | "Start page" | "When starting the app" | "New tab" | "When creating a new tab" | "Permission" | "Search engine" | "User agent" | "Open link with app" | "Import" | "Export" | "Remove in-app ads" | "Coffee" | "Delicious coffee" | "Element inspection" | "(more fine-grained blocking)" | <PrefPdf.w> | "Block the site from running other apps." | <PrefPdf.w> | "If site information is available, open the site." | "Ad blocker" | "At least one filter must be active to block ads." | "This feature uses more memory." | "Ad filter" | "Ad whitelist" | "You can register sites where ads are allowed." | "Block area" | "Long press on the object you want to block and a menu will appear." | "Overlay blocker" | <PrefTts.u> | "Overlay Whitelist" | "You can register sites where overlays are allowed." | "Popup blocker" | <PrefWeb.q> | "Popup whitelist" | "You can register sites where popups are allowed." | "Block app execution" | "Blocked Links" | "Lock screen" | "Blocked images" | "If the number of downloads exceeds the limit, it will be queued." | "Downloading too many files at the same time can slow device and cause problems." | "If the time limit is exceeded while the app is in the background, downloads will be paused to save battery." | "The timer is released when the app goes to the foreground." | "Download manager" | "Download location" | "Fast download" | "Some sites may not be supported." | "Number of retries" | "Number of retries in case of connection failure" | "Concurrent download" | "Background state timeout" | "Download completion notification" | "Report site" | "Please provide the address of the site where the video can not be downloaded." | "Video manager button" | "Button color" | "Detailed settings" | "Background playback" | "Some sites may not be supported." | "YouTube manager button" | "Button color" | "Detailed settings" | "YouTube autoplay" | "Unmute YouTube" | "Some sites may not be supported." | "This feature uses more memory." | "Go back without refresh" | "Memory limit" | "Open limit" | "Memory limit" | "Memory release prevention list" | "Memory retention period" | "If you keep memory too long, your browser may become slower." | "Web page" | "Depends on system setting" | "Dark image" | "Applies only when the webpage is in dark mode." | "Image brightness" | "Header" | "Header color" | "Dark mode Home" | "When you set a wallpaper, your homepage will always be in dark mode." | "Screen filter" | "Filter color" | "Brightness" | "Screen timeout" | "Screen rotation" | "Where to add tabs" | "Automatic grouping" | "They are automatically grouped when a new window opens on the site." | "Show tab bar" | "Detailed settings" | "Swipe up tab bar" | "Swipe down tab bar" | "Tab indicator" | "Show tab position and number of tabs on tab button" | "Tab loop" | "Switch between first and last tab" | "Use tap animation" | "Undelete" | "Open in new tab" | "Activate keyboard when adding tab" | "Click on the homepage icon to close all tabs" | "Last page notification" | "If you click the back button on the last page of the tab, it is notified that it is the last page of the tab." | "Swipe the page from the last page to close the tab" | "Previous button behavior on last page" | "Full screen and Toolbar" | "Landscape mode" | "Floating button" | "Address bar label" | "Search bar button" | "Search suggestions" | "Auto complete" | "Recent searches" | "Save recent searches in incognito mode" | "One-handed mode button" | "You can move the button by dragging it." | "Button color" | "Area size" | "Pull to refresh" | "Back to top button" | "Show scroll bar" | "Scroll web pages with volume keys" | "Use scroll animation" | "Show images" | "Display images of a webpage." | "Zoom in with two fingers" | "Reader mode" | "Text size" | "Font" | "You can change the font of web pages with TTF files in internal storage or SD card." | "Use UserScript" | "UserScript list" | "Up" | "Down" | "Left" | "Right" | "Tab gesture" | "(Two fingers)" | "Swipe" | "Swipe sensitivity" | "Detect language" | "Language" | "Recent record" | "Always show translate button" | "Button location" | "Button color" | "Automatic translation blacklist" | "You can register sites that do not use automatic translation." | "Appears on the screen while the voice is playing." | "You can move the button by dragging it." | "Enable TTS" | "When you click the text displayed in the browser, it is read by voice." | "Detailed settings" | "Stop button" | "Button color" | "(Web streaming)" | "Video" | "Image" | "Repeat play" | "Local file" | "Subtitle" | "It does not save what you type on the keyboard." | "Some keyboards may not be supported." | "Keyboard security" | "App lock" | "Applies to incognito mode only" | "Initialization target" | "Android Screenshot" | "Lock screen" | "Save history" | "Save history in incognito mode. History in incognito mode does not appear in normal mode." | "Save download history" | "Save download history in incognito mode. Download history in incognito mode does not appear in normal mode." | "Keep tabs" | "Incognito tabs are retained when you change to normal mode." | "Keep logged in" | "Incognito mode login information is retained when you change to normal mode." | "Notification" | "Reset" | "Resetting will delete all data in incognito mode." | "Some sites may not be supported." | "Stores passwords in normal mode and incognito mode separately." | "Save Password" | "Login lock" | "The lock screen will launch before logging in with the saved password." | "Password manager button" | "You can move the button by dragging it." | "Button color" | "List" | "Lock screen" | "Reset" | "Resetting will delete all data associated with the password." | "Select items to delete" | "Select items to delete when app exits" | "When the app is closed, the selected item is deleted." | "Notification when deleted" | "DNS" | "It may not be supported in all regions." | "Server" | "Visit the site" | "App version" | "Terms of Service" | "Privacy Policy" | "Open source licenses" | "Frequently asked questions" | "Blog"
+## SettingMain; D0
+  "General" | [icon:outline_settings_dark_24] | "Advanced" | [icon:outline_settings_suggest_dark_24] | "Site" | [icon:outline_public_dark_24] | "Backup" | [icon:outline_autorenew_dark_24] | "Purchase" | [icon:outline_credit_card_dark_24] | "Web cleaner" | [icon:outline_verified_user_dark_24] | "Download" | [icon:outline_download_dark_24] | "Media" | [icon:baseline_play_arrow_dark_24] | "Memory saving" | [icon:outline_energy_savings_leaf_dark_24] | "Display" | [icon:outline_format_color_fill_dark_24] | "Layout" | [icon:outline_space_dashboard_dark_24] | "Menu" | [icon:outline_dashboard_customize_dark_24] | "Tab" | [icon:outline_filter_none_dark_24] | "Composition" | [icon:outline_build_dark_24] | "Web content" | [icon:outline_web_dark_24] | "Gesture" | [icon:outline_gesture_dark_24] | "Translator" | [icon:outline_translate_dark_24] | "Text to Speech" | [icon:outline_text_to_speech_dark_24] | "TV Cast" | [icon:outline_cast_dark_24] | "Security" | [icon:outline_security_dark_24] | "Incognito mode" | [icon:outline_secret_mode_dark_24] | "Password" | [icon:outline_lock_dark_24] | "Clear data" | [icon:outline_delete_sweep_dark_24] | "DNS" | [icon:outline_vpn_key_dark_24] | "Rate app" | [icon:outline_thumb_up_dark_24] | "Recommend to a friend" | [icon:outline_favorite_dark_24] | "Send feedback" | [icon:outline_mail_dark_24] | "Information" | [icon:outline_info_dark_24] | [icon:outline_settings_black_24] | "Advanced" | [icon:outline_settings_suggest_black_24] | "Site" | [icon:outline_public_black_24] | "Backup" | [icon:outline_autorenew_black_24] | "Purchase" | [icon:outline_credit_card_black_24] | "Web cleaner" | [icon:outline_verified_user_black_24] | "Download" | [icon:outline_download_black_24] | "Media" | [icon:baseline_play_arrow_black_24] | "Memory saving" | [icon:outline_energy_savings_leaf_black_24] | "Display" | [icon:outline_format_color_fill_black_24] | "Layout" | [icon:outline_space_dashboard_black_24] | "Menu" | [icon:outline_dashboard_customize_black_24] | "Tab" | [icon:outline_filter_none_black_24] | "Composition" | [icon:outline_build_black_24] | "Web content" | [icon:outline_web_black_24] | "Gesture" | [icon:outline_gesture_black_24] | "Translator" | [icon:outline_translate_black_24] | "Text to Speech" | [icon:outline_text_to_speech_black_24] | "TV Cast" | [icon:outline_cast_black_24] | "Security" | [icon:outline_security_black_24] | "Incognito mode" | [icon:outline_secret_mode_black_24] | "Password" | [icon:outline_lock_black_24] | "Clear data" | [icon:outline_delete_sweep_black_24] | "DNS" | [icon:outline_vpn_key_black_24] | "Rate app" | [icon:outline_thumb_up_black_24] | "Recommend to a friend" | [icon:outline_favorite_black_24] | "Send feedback" | [icon:outline_mail_black_24] | "Information" | [icon:outline_info_black_24]
+## SettingMedia$5; b
+  <PrefZone.r> | <PrefZone.r> | KEY:mYouPos | <PrefZone.r> | "You can move the button by dragging it." | <PrefZone.n> | <PrefZone.n> | KEY:mDownPos | <PrefZone.n> | "You can move the button by dragging it."
+## SettingMedia$6; a
+  <PrefEditor.w> | <PrefEditor.v> | "Button color" | <PrefEditor.k> | <PrefEditor.j> | "Button color"
+## SettingMedia; <clinit>
+  "Not used" | "Top bar" | "Bottom bar" | "Floating button"
+## SettingMedia; D0
+  <PrefZone.n> | "You can move the button by dragging it." | <PrefEditor.k> | <PrefEditor.j> | "When video is detected, a button will appear on the screen." | "Some sites need to play the video before the video is detected." | [icon:outline_youtube_activity_2_dark_24] | [icon:outline_youtube_activity_2_black_24] | <PrefZone.r> | "You can move the button by dragging it." | <PrefEditor.w> | <PrefEditor.v> | "Video manager button" | <PrefZone.n> | "Button color" | "Detailed settings" | "Background playback" | "Some sites may not be supported." | <PrefZone.G> | "Due to YouTube policy, YouTube background playback is not supported." | "YouTube manager button" | <PrefZone.r> | "Button color" | "Detailed settings" | "YouTube autoplay" | <PrefZtwo.T> | "Unmute YouTube" | <PrefZtwo.U>
+## SettingMemory$4; a
+  "Memory release prevention list" | "Unlimited" | "Settings" | <PrefZtwo.E> | KEY:mAddPage | <PrefZtwo.E> | "Memory limit" | <PrefZtwo.H>
+## SettingMemory; Q0
+  <PrefZtwo.H> | "If you exceed the limit, memory is automatically released starting with the oldest pages." | "If you have too many pages open, your browser may be slow."
+## SettingMemory; R0
+  <PrefZtwo.G> | "If you exceed the limit, memory is automatically released starting with the oldest tabs." | "If too many tabs are open, the browser may slow down."
+## SettingMemory; S0
+  <PrefZtwo.F> | "If you exceed the limit, the first tab will be automatically deleted." | "If too many tabs are open, the browser may slow down."
+## SettingMemory; D0
+  [icon:outline_description_dark_24] | [icon:outline_filter_none_dark_24] | [icon:outline_description_black_24] | [icon:outline_filter_none_black_24] | "Some sites may not be supported." | "This feature uses more memory." | <PrefZtwo.E> | "Page" | "Go back without refresh" | <PrefZtwo.E> | "Memory limit" | <PrefZtwo.H> | "Tab" | "Open limit" | <PrefZtwo.F> | "Memory limit" | <PrefZtwo.G> | "Memory release prevention list" | "Memory retention period" | <PrefZtwo.I> | "If you keep memory too long, your browser may become slower."
+## SettingMemory; O0
+  "Unlimited" | "day"
+## SettingMemory; T0
+  <PrefZtwo.H> | <PrefZtwo.H> | KEY:mPageMemory | <PrefZtwo.E> | "Memory limit" | <PrefZtwo.H> | <PrefZtwo.F> | <PrefZtwo.F> | KEY:mTabLimit | "Open limit" | <PrefZtwo.F> | <PrefZtwo.G> | <PrefZtwo.G> | KEY:mTabMemory | "Memory limit" | <PrefZtwo.G> | <PrefZtwo.I> | <PrefZtwo.I> | KEY:mDayMemory | "Memory retention period" | <PrefZtwo.I> | "If you keep memory too long, your browser may become slower."
+## SettingMenu$21; run
+  <PrefRead.u> | [icon:round_guide_8] | "1. You can move by pressing and holding the icon." | "2. You can change it by clicking the icon."
+## SettingMenu$3; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingMenu; L0
+  "Are you sure you want to delete all?" | "Delete all"
+## SettingMenu; M0
+  <PrefRead.w> | "Space" | "Spaces are not visible on the running screen."
+## SettingMenu; P0
+  "Down" | "Up" | "Change" | "Delete"
+## SettingMenu; onCreate
+  <PrefMain.z> | <PrefMain.A> | <PrefMain.x> | "Menu" | "Not used" | "Not used"
+## SettingNews$4; a
+  <PrefZtri.C> | KEY:mNewsIcon | "Language" | "Not used" | <PrefZtwo.M> | <PrefZtwo.L> | "Google News" | "Direct input" | <PrefZtwo.J> | KEY:mNewsUse
+## SettingNews; <clinit>
+  "Reader mode" | "Preview" | "Open" | "New tab" | "Group tab" | "Background tab" | "Incognito tab"
+## SettingNews; D0
+  "Show news" | "It may not be supported in all regions." | <PrefZtwo.J> | "News source" | <PrefZtwo.L> | "Open with" | <PrefZtwo.M> | <PrefEditor.L> | <PrefEditor.K> | "Show news" | "It may not be supported in all regions." | <PrefZtwo.J> | "News source" | "Google News" | "Open with" | <PrefZtwo.M> | "Language & region" | "Recent record" | <PrefZtwo.b0> | "News title translation" | <PrefZtwo.O> | <PrefZtwo.P> | "Not used" | "Recent record" | <PrefZtwo.c0> | "Search button" | "You can move the button by dragging it." | <PrefZtri.C> | "Button color"
+## SettingNews; P0
+  "Unlimited" | "Do not save"
+## SettingNews; U0
+  <PrefZtwo.c0> | <PrefZtwo.b0> | "Do not save" | "Unlimited" | "Settings"
+## SettingPassList$11; b
+  [icon:outline_public_black_24] | [icon:outline_public_black_24] | " items" | " item"
+## SettingPassList$4; onClick
+  "Import from CSV" | "Export to CSV"
+## SettingPassList; j0
+  "Invalid path" | "Invalid path" | "Invalid file" | "Invalid file" | "Invalid file"
+## SettingPassList; onCreate
+  "Password" | [icon:logo_gray] | <PrefSync.k> | <PrefSync.k> | "Import from normal mode"
+## SettingPassword$4; a
+  <PrefSecret.z> | <PrefSecret.z> | <PrefZtri.M> | KEY:mPassIcon | <PrefSecret.z> | <PrefSecret.y> | KEY:mLoginLock | <PrefSecret.x> | KEY:mSavePass2 | <PrefSecret.x> | <PrefEditor.T> | <PrefEditor.S> | "Password manager button" | "You can move the button by dragging it." | <PrefZtri.M> | "Button color"
+## SettingPassword; D0
+  "Some sites may not be supported." | "Stores passwords in normal mode and incognito mode separately." | <PrefSecret.y> | <PrefSecret.z> | <PrefSecret.x> | <PrefEditor.T> | <PrefEditor.S> | "Save Password" | <PrefSecret.x> | "Login lock" | "The lock screen will launch before logging in with the saved password." | "Password manager button" | "You can move the button by dragging it." | <PrefZtri.M> | "Button color" | "List" | "Lock screen" | <PrefSecret.z> | "Reset" | "Resetting will delete all data associated with the password."
+## SettingPassword; O0
+  <PrefSecret.y> | <PrefSecret.z> | <PrefSecret.x> | "Login lock" | "The lock screen will launch before logging in with the saved password."
+## SettingPassword; P0
+  "Please set up a lock screen first." | "Please set up a lock screen first." | "This is for your privacy."
+## SettingPay$2; onClick
+  "In-app ads" | "Greetings"
+## SettingPay; D0
+  "One payment will remove in-app ads forever." | "It is always valid if the account used for payment is the same." | "In-app ads and website ads are different." | "Website ads removal feature is free." | "Thank you for using Soul Browser." | "Soul Browser is maintained by your donation." | "Loading…" | [icon:outline_favorite_dark_20] | [icon:outline_local_cafe_dark_24] | [icon:outline_favorite_black_20] | [icon:outline_local_cafe_black_24] | "Remove in-app ads" | "Donation" | "Coffee" | "Delicious coffee" | [icon:dev_cat]
+## SettingPay; O0
+  "An error has occurred. Please try again later." | "Loading… Please try again later." | "It has already been purchased."
+## SettingPrivacy; O0
+  <PrefWeb.s> | "History" | "Cache" | "Cookie" | "Normal tab" | "Incognito tab" | "Recent searches" | <PrefWeb.s> | "History" | <PrefWeb.s> | "Cookie" | <PrefWeb.s> | "Cache" | <PrefWeb.s> | "Normal tab" | <PrefWeb.s> | "Incognito tab"
+## SettingPrivacy; D0
+  "Select items to delete" | "Select items to delete when app exits" | "When the app is closed, the selected item is deleted." | "Notification when deleted" | <PrefWeb.I> | "Accumulation of stale data can slow down your browser. It is a good idea to clean up your data periodically."
+## SettingQuick; D0
+  "Use on home page" | <PrefZtri.i0> | "Big icon" | <PrefPdf.G> | "Add button" | <PrefZtri.k0> | "Columns count"
+## SettingSecret$5; a
+  <PrefSecret.o> | KEY:mKeepLogin | <PrefSecret.n> | KEY:mKeepTab | KEY:mSecretDown | <PrefSecret.m> | <PrefSecret.m> | KEY:mSecretHist | <PrefSecret.l> | <PrefSecret.l> | "Resetting will delete all data in incognito mode." | "Reset" | <PrefSecret.p> | KEY:mSecretNoti | <PrefSecret.p> | <PrefSync.k>
+## SettingSecret; D0
+  <PrefSecret.p> | "Lock screen" | "Save history" | "Save history in incognito mode. History in incognito mode does not appear in normal mode." | <PrefSecret.l> | "Save download history" | "Save download history in incognito mode. Download history in incognito mode does not appear in normal mode." | <PrefSecret.m> | "Keep tabs" | "Incognito tabs are retained when you change to normal mode." | <PrefSecret.n> | "Keep logged in" | "Incognito mode login information is retained when you change to normal mode." | <PrefSecret.o> | "Notification" | "Reset" | "Resetting will delete all data in incognito mode."
+## SettingSecure$9; b
+  <PrefSecret.s> | <PrefSecret.s> | <PrefSecret.t> | <PrefSecret.s> | "Applies to incognito mode only" | <PrefSecret.u> | "Initialization target"
+## SettingSecure; O0
+  <PrefSecret.u> | "If you forget your password and initialize the lock screen, the selected data will be deleted." | "Only incognito mode data is deleted."
+## SettingSecure; D0
+  <PrefSecret.s> | <PrefSecret.q> | "It does not save what you type on the keyboard." | "Some keyboards may not be supported." | <PrefSecret.F> | <PrefSecret.G> | "Keyboard security" | <PrefSecret.H> | "App lock" | <PrefSecret.s> | "Applies to incognito mode only" | <PrefSecret.u> | "Initialization target" | "Android Screenshot" | <PrefSecret.q> | "Applies to incognito mode only" | <PrefSecret.r>
+## SettingSecure; P0
+  <PrefSecret.v> | "Shortcuts" | "Bookmark" | "Downloads" | "History" | "Tab" | "Shortcuts" | <PrefSecret.v> | "Bookmark" | <PrefSecret.v> | "Downloads" | <PrefSecret.v> | "Recent searches" | <PrefSecret.v> | "History" | <PrefSecret.v> | "Tab"
+## SettingSecure; j0
+  <PrefSecret.s> | "App lock" | <PrefSecret.s> | "Applies to incognito mode only" | <PrefSecret.u> | "Initialization target"
+## SettingSense$3; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingSite$4; a
+  <PrefZone.I> | <PrefZone.H> | <PrefAlbum.P> | KEY:mLinkApp | "Permission" | <PrefWeb.m> | "Home page" | "Custom" | <PrefWeb.l> | <PrefWeb.l> | "Last visited page" | "Home page" | "Custom"
+## SettingSite$6; b
+  <PrefWeb.l> | "Home page" | "Last visited page" | <PrefWeb.l> | KEY:mStartPage
+## SettingSite; D0
+  <PrefZtwo.j> | <PrefZtwo.j> | <PrefZtwo.j> | <PrefZtwo.p> | <PrefZtwo.p> | "Long press" | "Link" | "Image" | "Home page" | "When you tap the home icon" | "Start page" | "When starting the app" | "New tab" | "When creating a new tab" | "Permission" | "Search engine" | "User agent" | "Open link with app" | <PrefAlbum.P> | <PrefZone.H> | <PrefZone.I>
+## SettingSite; O0
+  <PrefWeb.k> | <PrefWeb.l> | <PrefWeb.m> | "Last visited page" | "Soul homepage" | "Home page" | "Soul homepage" | "Blank page"
+## SettingSite; j0
+  <PrefZtwo.j> | <PrefZtwo.j> | <PrefZtwo.j> | "Search engine" | <PrefZtwo.p> | <PrefZtwo.p> | "User agent"
+## SettingSwipe$10; run
+  <PrefRead.x> | [icon:round_guide_8] | "1. Click the area to change the function." | "2. Drag the area to change the size." | "You can set landscape mode and portrait mode differently." | "To set landscape mode, rotate your device horizontally."
+## SettingSwipe$18; run
+  "Tip" | "OK" | "Back page" | "Next page" | "Previous tab" | "Next tab" | "Move page" | "Move tab" | "System" | "Depends on system setting" | [icon:outline_wb_incandescent_2_dark_24] | [icon:selector_normal_dark] | [icon:outline_wb_incandescent_2_black_24] | [icon:selector_normal]
+## SettingSwipe$1; run
+  [icon:outline_chevron_left_dark_24] | [icon:outline_replay_dark_20] | [icon:outline_check_dark_20] | [icon:outline_help_dark_20] | [icon:outline_chevron_left_black_24] | [icon:outline_replay_black_20] | [icon:outline_check_black_20] | [icon:outline_help_black_20] | "Landscape" | "Portrait" | [icon:selector_normal_dark] | [icon:selector_normal] | [icon:outline_swipe_up] | [icon:outline_swipe_up] | [icon:outline_swipe_hori] | [icon:outline_swipe_hori] | <PrefRead.x>
+## SettingSwipe$3; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingSwipe$6; onClick
+  "Not used" | "System" | "Move page" | "Move tab"
+## SettingSwipe; onConfigurationChanged
+  "Landscape" | "Portrait" | [icon:outline_chevron_left_dark_24] | [icon:outline_replay_dark_20] | [icon:outline_check_dark_20] | [icon:outline_help_dark_20] | [icon:outline_chevron_left_black_24] | [icon:outline_replay_black_20] | [icon:outline_check_black_20] | [icon:outline_help_black_20] | [icon:selector_normal_dark] | [icon:selector_normal]
+## SettingTab$4; a
+  "Close tab" | <PrefTts.E> | "Exit app" | <PrefTts.E> | <PrefZtri.n0> | KEY:mLastSwipe | <PrefMain.n> | KEY:mLastNoti | <PrefZone.j> | KEY:mHomeClose | <PrefWeb.B> | KEY:mTabKeypad | <PrefZtwo.C> | <PrefAlbum.O> | KEY:mTabAnim | <PrefZtwo.s> | KEY:mTabLoop | <PrefZtwo.r> | KEY:mTabIndi | <PrefTts.v> | KEY:mAutoGroup | "Next to the current tab" | <PrefTts.D> | "End of tab list" | <PrefTts.D>
+## SettingTab$5; b
+  <PrefTts.D> | <PrefTts.D> | KEY:mTabLast | <PrefTts.D> | "End of tab list" | "Next to the current tab"
+## SettingTab$6; b
+  <PrefTts.E> | <PrefTts.E> | KEY:mLastExit | <PrefTts.E> | "Exit app" | "Close tab"
+## SettingTab; D0
+  <PrefTts.D> | "End of tab list" | "Next to the current tab" | <PrefTts.E> | "Exit app" | "Close tab" | "Where to add tabs" | "Automatic grouping" | "They are automatically grouped when a new window opens on the site." | <PrefTts.v> | "Show tab bar" | <PrefWeb.x> | "Detailed settings" | "Swipe up tab bar" | <PrefWeb.C> | "Swipe down tab bar" | <PrefWeb.D> | "Tab indicator" | "Show tab position and number of tabs on tab button" | <PrefZtwo.r> | "Tab loop" | "Switch between first and last tab" | <PrefZtwo.s> | "Use tap animation" | <PrefAlbum.O> | "Undelete" | "Open in new tab" | "Activate keyboard when adding tab" | <PrefWeb.B> | "Click on the homepage icon to close all tabs" | <PrefZone.j> | "Last page notification" | "If you click the back button on the last page of the tab, it is notified that it is the last page of the tab." | <PrefMain.n> | "Swipe the page from the last page to close the tab" | <PrefZtri.n0> | "Previous button behavior on last page"
+## SettingTab; O0
+  <PrefZtwo.C> | "Link" | "Search" | "Shortcuts" | "Bookmark" | "History" | "Link" | <PrefZtwo.C> | "Search" | <PrefZtwo.C> | "Shortcuts" | <PrefZtwo.C> | "Bookmark" | <PrefZtwo.C> | "History"
+## SettingTab; P0
+  <PrefWeb.A> | <PrefZone.F> | "Web page" | "Tab list" | "Web page" | <PrefZone.F> | "Tab list"
+## SettingTab; S0
+  "Change" | "Not used"
+## SettingTrans$17; b
+  <PrefAlbum.w> | <PrefAlbum.w> | KEY:mTransPage | <PrefAlbum.w> | "Floating button" | "You can move the button by dragging it." | "Address bar"
+## SettingTrans$5; a
+  "Automatic translation blacklist" | "Address bar" | <PrefAlbum.w> | "Floating button" | <PrefAlbum.w> | <PrefAlbum.v> | KEY:mTransIcon | <PrefZtwo.d0> | "Do not save" | "Unlimited" | "Settings" | <PrefAlbum.u>
+## SettingTrans; <clinit>
+  "Not used" | "Automatic translation" | "Always translate" | "If a translatable language is detected, it will be translated." | "All pages are always translated."
+## SettingTrans; D0
+  [icon:trans_logo_regular_white] | [icon:trans_logo_regular_color] | <PrefAlbum.u> | <PrefAlbum.w> | "Floating button" | "You can move the button by dragging it." | "Address bar" | <PrefEditor.X> | <PrefEditor.W> | "Detect language" | "Language" | <PrefAlbum.y> | "Recent record" | <PrefZtwo.d0> | "Unlimited" | "Do not save" | "Always show translate button" | <PrefAlbum.v> | "Button location" | "Button color" | "Automatic translation blacklist" | "You can register sites that do not use automatic translation."
+## SettingTrans; N0
+  <PrefZtwo.d0> | <PrefZtwo.d0> | KEY:mRecentTrans | "Unlimited" | "Do not save" | <PrefZtwo.d0>
+## SettingTts$3; onClick
+  "Supported languages depend on the TTS engine being used." | "TTS engine can be changed in device settings."
+## SettingTts; D0
+  "Appears on the screen while the voice is playing." | "You can move the button by dragging it." | <PrefEditor.o> | <PrefEditor.n> | "Enable TTS" | "When you click the text displayed in the browser, it is read by voice." | <PrefTts.j> | "Detailed settings" | "Stop button" | <PrefTts.n> | "Button color"
+## SettingVideo$4; a
+  <PrefSecret.D> | <PrefVideo.t> | <PrefVideo.s> | KEY:mDragSeek | <PrefVideo.s> | "Swipe sensitivity" | <PrefVideo.t> | <PrefVideo.q> | KEY:mDragVolume | <PrefVideo.r> | KEY:mDragBright | "Tap the screen" | <PrefPdf.v> | "Long press on the screen" | <PrefPdf.v> | <PrefVideo.n> | KEY:mCutOut | <PrefVideo.m> | KEY:mPipHome
+## SettingVideo$5; b
+  <PrefPdf.v> | <PrefPdf.v> | KEY:mIconLong | <PrefPdf.v> | "Long press on the screen" | "Tap the screen"
+## SettingVideo; D0
+  "PIP mode is supported starting from Android 8." | "Drag the screen left or right to navigate the screen." | "Some sites may not be supported." | <PrefVideo.s> | "Switch to PIP with home key" | <PrefVideo.m> | "Display cutout" | "On devices with display cutouts, content is rendered into the cutout area." | <PrefVideo.n> | "Button display" | <PrefPdf.v> | "Long press on the screen" | "Tap the screen" | "Brightness control by touch" | "Drag the area on the left side of the screen to change the brightness." | <PrefVideo.r> | "Volume control by touch" | "Drag the area on the right side of the screen to change the volume." | <PrefVideo.q> | "Screen navigation by touch" | <PrefVideo.s> | "Swipe sensitivity" | <PrefVideo.t> | "Double tap" | "Some sites may not be supported." | "Lock screen" | <PrefSecret.D> | "Lock screen for unlocking touch during video playback."
+## SettingVideo; j0
+  "Lock screen" | <PrefSecret.D> | "Lock screen for unlocking touch during video playback."
+## SettingVideoSub$2; run
+  "Outline" | "Transparency"
+## SettingVideoSub$3; run
+  "Background" | "Transparency"
+## SettingVideoSub$6; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingVideoTap$1; run
+  [icon:outline_chevron_left_dark_24] | [icon:outline_replay_dark_20] | [icon:outline_check_dark_20] | [icon:outline_chevron_left_black_24] | [icon:outline_replay_black_20] | [icon:outline_check_black_20] | "Landscape" | "Portrait" | [icon:selector_normal_dark] | [icon:selector_normal] | [icon:outline_swipe_hori] | [icon:outline_swipe_hori] | <PrefVideo.l>
+## SettingVideoTap$3; onClick
+  "Do you want to reset settings?" | "Reset"
+## SettingVideoTap$5; onClick
+  "s" | "s" | "Pause" | "Not used"
+## SettingVideoTap$9; run
+  <PrefVideo.l> | [icon:round_guide_8] | "1. Click the area to change the function." | "2. Drag the area to change the size." | "You can set landscape mode and portrait mode differently." | "To set landscape mode, rotate your device horizontally."
+## SettingVideoTap; onConfigurationChanged
+  "Landscape" | "Portrait"
+## SettingVpn$2; a
+  <PrefTts.z> | <PrefTts.A> | <PrefTts.B> | "All sites allowed" | "Block harmful sites" | "Direct input" | "Not supported"
+## SettingVpn$6$1; run
+  "Server" | "Visit the site" | <PrefTts.y>
+## SettingVpn$7; a
+  "Server" | "Visit the site" | <PrefTts.y>
+## SettingVpn; D0
+  "DNS" | "It may not be supported in all regions." | <PrefTts.y> | "Server" | "Visit the site"
+## SettingWeb; <clinit>
+  "Not used" | "Web page" | "Text only"
+## SettingWeb; D0
+  <PrefZone.k> | <PrefZone.l> | "Default font" | "Untrusted user scripts can interfere with the normal operation of the browser or cause serious security problems." | "Please be careful when using it." | "Show images" | "Display images of a webpage." | <PrefZone.u> | "Zoom in with two fingers" | <PrefZtwo.A> | "Reader mode" | <PrefZtwo.S> | "Text size" | "Font" | "You can change the font of web pages with TTF files in internal storage or SD card." | "Use UserScript" | <PrefPdf.L> | "UserScript list" | <PrefPdf.L>
+## SettingWeb; j0
+  <PrefZone.k> | <PrefZone.l> | "Default font" | "Font" | "You can change the font of web pages with TTF files in internal storage or SD card."

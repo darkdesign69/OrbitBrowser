@@ -79,6 +79,9 @@ object K {
     const val BACK_LAST = "back_last"
     const val SHOW_SCROLLBAR = "show_scrollbar"
     const val HOME_CLOSE_ALL = "home_close_all"
+    const val KEYBOARD_ADD = "keyboard_add"
+    const val TAB_OPEN_LIMIT = "tab_open_limit"
+    const val DEBUG_WEB = "adv_debug"
 }
 
 /** Languages offered for translation: label and language code ("" = follow the system). */
@@ -239,7 +242,10 @@ class Prefs(context: Context) {
             "dl_ask" to false,
             "dl_wifi" to false,
             "dl_notify" to true,
-            "mem_tab_limit" to 0
+            "mem_tab_limit" to 0,
+            K.KEYBOARD_ADD to false,
+            K.TAB_OPEN_LIMIT to 0,
+            K.DEBUG_WEB to false
         )
     }
 }

@@ -45,3 +45,7 @@ Push `orbit-full.zip` to the repo root and run **Build APK** in GitHub Actions, 
 
 ## Settings
 Settings follow Soul Browser's page layout. Only options that actually work are shown; see SETTINGS_STATUS.md.
+
+
+## Reverse-engineering notes
+`tools/soul/` has small Python decoders (binary XML, resources.arsc, DEX) used to read Soul's resources and settings structure without apktool. See `docs/`.

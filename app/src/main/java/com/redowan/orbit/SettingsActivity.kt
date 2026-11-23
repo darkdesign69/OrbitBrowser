@@ -39,7 +39,7 @@ class SettingsActivity : AppCompatActivity() {
     private object Gap : Row()
     private class Head(val icon: Int, val text: String) : Row()
     private class Nav(val icon: Int, val title: String, val page: String) : Row()
-    private class Sw(val key: String, val title: String, val info: String, val after: (() -> Unit)?) : Row()
+    private class Sw(val key: String, val title: String, val info: String, val after: (() -> Unit)?, val inv: Boolean = false) : Row()
     private class Ch(
         val key: String, val title: String, val labels: List<String>, val values: List<Int>,
         val info: String, val after: (() -> Unit)?
@@ -110,9 +110,16 @@ class SettingsActivity : AppCompatActivity() {
 
     // ------------------------------------------------------------------ row builders
 
-    private fun sw(key: String, title: String, def: Boolean, info: String = "", after: (() -> Unit)? = null): Row {
+    private fun sw(key: String, title: String, def: Boolean, info: String = "", after: (() -> Unit)? = null, inv: Boolean = false): Row {
         Prefs.DEFAULTS.putIfAbsent(key, def)
-        return Sw(key, title, info, after)
+        return Sw(key, title, info, after, inv)
+    }
+
+    /** Soul's own icon for the current theme (white-ish in dark, black in light). [name] like "outline_settings". */
+    private fun ic(name: String, size: Int = 24): Int {
+        val night = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        return resources.getIdentifier("${name}_${if (night) "dark" else "black"}_$size", "drawable", packageName)
     }
 
     private fun ch(
@@ -150,7 +157,7 @@ class SettingsActivity : AppCompatActivity() {
         "general", "advanced", "site", "backup", "webcleaner", "download", "media", "memory",
         "display", "layout", "menu", "tab", "composition", "fullscreen",
         "webcontent", "gesture", "translator", "tts", "tvcast", "security", "incognito", "password",
-        "cleardata", "dns"
+        "cleardata", "dns", "info"
     )
 
     private fun pageTitle(p: String) = when (p) {
@@ -179,6 +186,7 @@ class SettingsActivity : AppCompatActivity() {
         "password" -> "Password"
         "cleardata" -> "Clear data"
         "dns" -> "DNS"
+        "info" -> "Information"
         else -> "Settings"
     }
 
@@ -208,39 +216,43 @@ class SettingsActivity : AppCompatActivity() {
         "password" -> passwordRows()
         "cleardata" -> clearDataRows()
         "dns" -> dnsRows()
+        "info" -> infoRows()
         else -> emptyList()
     }
 
     private fun mainRows(): List<Row> = listOf(
-        Nav(R.drawable.ic_settings, "General", "general"),
-        Nav(R.drawable.ic_tune, "Advanced", "advanced"),
-        Nav(R.drawable.ic_globe, "Site", "site"),
-        Nav(R.drawable.ic_sync, "Backup", "backup"),
+        Nav(ic("outline_settings"), "General", "general"),
+        Nav(ic("outline_settings_suggest"), "Advanced", "advanced"),
+        Nav(ic("outline_public"), "Site", "site"),
+        Nav(ic("outline_autorenew"), "Backup", "backup"),
         Gap,
-        Nav(R.drawable.ic_shield, "Web cleaner", "webcleaner"),
-        Nav(R.drawable.ic_download, "Download", "download"),
-        Nav(R.drawable.ic_play_arrow, "Media", "media"),
-        Nav(R.drawable.ic_bolt, "Memory saving", "memory"),
+        Nav(ic("outline_verified_user"), "Web cleaner", "webcleaner"),
+        Nav(ic("outline_download"), "Download", "download"),
+        Nav(ic("baseline_play_arrow"), "Media", "media"),
+        Nav(ic("outline_energy_savings_leaf"), "Memory saving", "memory"),
         Gap,
-        Nav(R.drawable.ic_paint, "Display", "display"),
-        Nav(R.drawable.ic_dashboard, "Layout", "layout"),
-        Nav(R.drawable.ic_grid, "Menu", "menu"),
-        Nav(R.drawable.ic_copy, "Tab", "tab"),
-        Nav(R.drawable.ic_build, "Composition", "composition"),
+        Nav(ic("outline_format_color_fill"), "Display", "display"),
+        Nav(ic("outline_space_dashboard"), "Layout", "layout"),
+        Nav(ic("outline_dashboard_customize"), "Menu", "menu"),
+        Nav(ic("outline_filter_none"), "Tab", "tab"),
+        Nav(ic("outline_build"), "Composition", "composition"),
         Gap,
-        Nav(R.drawable.ic_web, "Web content", "webcontent"),
-        Nav(R.drawable.ic_swipe, "Gesture", "gesture"),
-        Nav(R.drawable.ic_translate, "Translator", "translator"),
-        Nav(R.drawable.ic_volume, "Text to Speech", "tts"),
-        Nav(R.drawable.ic_cast, "TV Cast", "tvcast"),
+        Nav(ic("outline_web"), "Web content", "webcontent"),
+        Nav(ic("outline_gesture"), "Gesture", "gesture"),
+        Nav(ic("outline_translate"), "Translator", "translator"),
+        Nav(ic("outline_text_to_speech"), "Text to Speech", "tts"),
+        Nav(ic("outline_cast"), "TV Cast", "tvcast"),
         Gap,
-        Nav(R.drawable.ic_shield, "Security", "security"),
-        Nav(R.drawable.ic_incognito, "Incognito mode", "incognito"),
-        Nav(R.drawable.ic_lock, "Password", "password"),
-        Nav(R.drawable.ic_delete, "Clear data", "cleardata"),
-        Nav(R.drawable.ic_key, "DNS", "dns"),
+        Nav(ic("outline_security"), "Security", "security"),
+        Nav(ic("outline_secret_mode"), "Incognito mode", "incognito"),
+        Nav(ic("outline_lock"), "Password", "password"),
+        Nav(ic("outline_delete_sweep"), "Clear data", "cleardata"),
+        Nav(ic("outline_vpn_key"), "DNS", "dns"),
         Gap,
-        act("Orbit Browser", "Open-source browser on the system WebView. No ads, no tracking.")
+        Nav(ic("outline_thumb_up"), "Rate app", "rate"),
+        Nav(ic("outline_favorite"), "Recommend to a friend", "recommend"),
+        Nav(ic("outline_mail"), "Send feedback", "feedback"),
+        Nav(ic("outline_info"), "Information", "info")
     )
 
     private fun generalRows(): List<Row> = listOf(
@@ -250,31 +262,51 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
             } catch (_: Exception) { toast("Open Android settings > Notifications") }
         },
+        act("Language", "", { java.util.Locale.getDefault().displayLanguage }) {
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= 33)
+                    startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:$packageName")))
+                else startActivity(Intent(Settings.ACTION_LOCALE_SETTINGS))
+            } catch (_: Exception) { toast("Open Android settings > Language") }
+        },
         Gap,
-        sw(K.KEYBOARD_START, "Keyboard activation on app startup", false, "Opens the keyboard when Orbit starts on the start page."),
-        sw(K.BACK_TWICE, "Back button twice to app exit", false),
-        sw(K.KEEP_TABS, "Restore tabs on launch", true)
+        sw(K.KEYBOARD_START, "Keyboard activation on app startup", false),
+        sw(K.BACK_TWICE, "Back button twice to app exit", false)
     )
 
     private fun advancedRows(): List<Row> = listOf(
-        sw(K.JS, "JavaScript", true),
-        sw(K.COOKIES, "Cookies", true),
-        sw(K.THIRD_COOKIES, "Third-party cookies", true),
-        sw(K.SAVE_HISTORY, "Save history", true),
+        sw(K.AMP_OFF, "Disable Google AMP", true, "Disable Google AMP in Google search results."),
         Gap,
-        sw(K.DESKTOP_ALL, "Request desktop site on all tabs", false),
-        ch(K.UA, "User agent", listOf("Android", "Desktop", "iPhone"), 0),
+        sw(K.COOKIES, "Cookies accepted (Recommended)", true,
+            "Allows the site to store or read cookies.\nSome sites may not function properly if you do not accept cookies."),
+        sw(K.THIRD_COOKIES, "Third party cookies", true),
+        sw(K.JS, "Using JavaScript (Recommended)", true, "Some browser features will not work if JavaScript is disabled."),
+        sites("JavaScript blacklist", K.SITE_JS_OFF, "You can register sites that block JavaScript."),
         Gap,
-        sw("adv_dom_storage", "Site storage (DOM storage)", true, "Needed by many sites to keep you signed in."),
-        sw("adv_mixed", "Allow mixed content", true, "Loads http items on https pages.")
+        sw(K.HTTPS_FIRST, "Connect with HTTPS", true,
+            "By default it connects with HTTPS. Sites that do not support HTTPS may not be able to connect."),
+        sw(K.SSL_BLOCK, "SSL error blocking", true, "When an SSL error occurs, the page automatically goes to a safe page."),
+        sw(K.SAFE_BROWSING, "Block harmful sites", true),
+        Gap,
+        sw(K.DEBUG_WEB, "Web debugging", false, "You can debug with USB.") {
+            toast("Applies the next time Orbit starts")
+        }
     )
 
     private fun siteRows(): List<Row> = listOf(
+        Head(0, "Long press"),
+        ch(K.LP_LINK, "Link", listOf("Menu", "Open in new tab", "Copy link"), 0),
+        ch(K.LP_IMAGE, "Image", listOf("Menu", "Save image", "Open in new tab"), 0),
+        Gap,
         act("Home page", "When you tap the home icon", { prefs.homepage.ifEmpty { "Orbit start page" } }) {
             Ui.prompt(this, "Home page", "https://… (empty = start page)", prefs.homepage) {
                 prefs.setStr(K.HOMEPAGE, it); adapter.notifyDataSetChanged()
             }
         },
+        ch(K.START_PAGE, "Start page", listOf("Last visited page", "Home page"), 0, "When starting the app") {
+            prefs.setBool(K.KEEP_TABS, prefs.int(K.START_PAGE) == 0)
+        },
+        ch(K.NEW_TAB, "New tab", listOf("Start page", "Home page", "Blank page"), 0, "When creating a new tab"),
         act("Permission", "Camera, microphone, location and notifications are set in Android.") {
             try {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
@@ -282,19 +314,17 @@ class SettingsActivity : AppCompatActivity() {
         },
         Gap,
         ch(K.ENGINE, "Search engine", Engines.names, 1),
-        Gap,
-        ch(K.LP_LINK, "Link (Long press)", listOf("Menu", "Open in new tab", "Copy link"), 0),
-        ch(K.LP_IMAGE, "Image (Long press)", listOf("Menu", "Save image", "Open in new tab"), 0)
+        ch(K.UA, "User agent", listOf("Android", "Desktop", "iPhone"), 0)
     )
 
     private fun backupRows(): List<Row> = listOf(
-        Head(R.drawable.ic_folder, "Storage"),
+        Head(ic("outline_sd_card"), "Storage"),
         act("Import", "Restore settings, start page and bookmarks from a backup file.") { backupIn.launch(arrayOf("application/json", "*/*")) },
         act("Export", "Save settings, start page and bookmarks to a file.") { backupOut.launch("orbit-backup.json") },
-        Head(R.drawable.ic_bookmarks, "Bookmarks"),
-        act("Import bookmarks (HTML)") { importHtml.launch(arrayOf("text/html", "*/*")) },
-        act("Export bookmarks (HTML)") { exportHtml.launch("orbit-bookmarks.html") },
-        act("Export bookmarks (CSV)") { exportCsv.launch("orbit-bookmarks.csv") }
+        Head(ic("outline_kid_star"), "Bookmark"),
+        act("Import", "From a bookmarks HTML file.") { importHtml.launch(arrayOf("text/html", "*/*")) },
+        act("Export to HTML") { exportHtml.launch("orbit-bookmarks.html") },
+        act("Export to CSV") { exportCsv.launch("orbit-bookmarks.csv") }
     )
 
     private fun webCleanerRows(): List<Row> = listOf(
@@ -302,11 +332,11 @@ class SettingsActivity : AppCompatActivity() {
         act("Ad filter", "Add filter lists from a web address or paste rules.", { "${AdBlocker.customCount()} custom domains" }) { filterLists() },
         sites("Ad whitelist", K.SITE_AD_OFF, "You can register sites where ads are allowed."),
         Gap,
-        sw(K.OVERLAY, "Overlay blocker", false, "Hides big fixed banners and dialogs."),
+        sw(K.OVERLAY, "Overlay blocker", false, "Removes elements that appear above the screen of a web page."),
         sites("Overlay Whitelist", K.SITE_OVERLAY_OFF, "You can register sites where overlays are allowed."),
         Gap,
-        ch(K.POPUP, "Popup blocker", listOf("Not used", "Normal", "Block all"), 1,
-            "Normal blocks popups that open without you tapping."),
+        ch(K.POPUP, "Popup blocker",
+            listOf("Not used", "Block only popups that are suspected as ads", "Block all popups"), 1),
         sites("Popup whitelist", K.SITE_POPUP_OFF, "You can register sites where popups are allowed."),
         Gap,
         Act("Blocked Links", { siteSummary(K.BLOCKED_LINKS) }, "Domains that are never loaded.") {
@@ -315,19 +345,16 @@ class SettingsActivity : AppCompatActivity() {
                 AdBlocker.importList(this, t)
                 adapter.notifyDataSetChanged()
             }
-        },
-        sw(K.IMAGES_OFF, "Block images", false, "Saves data; pages load faster."),
-        sites("JavaScript blacklist", K.SITE_JS_OFF, "Sites where JavaScript is turned off."),
-        sw(K.AMP_OFF, "Disable Google AMP", true, "Opens the original page instead.")
+        }
     )
 
     private fun downloadRows(): List<Row> = listOf(
         act("Downloads", "Open the list of downloads.") { startActivity(Intent(this, DownloadsActivity::class.java)) },
         act("Download location", "", { "Downloads/Orbit" }),
         Gap,
+        sw("dl_notify", "Download completion notification", true),
         sw("dl_ask", "Ask before downloading", false, "Shows the file name and asks first."),
         sw("dl_wifi", "Wi-Fi only", false, "Don't use mobile data for downloads."),
-        sw("dl_notify", "Download completion notification", true),
         Gap,
         Note("Files are downloaded by Android's download manager, so they keep going in the background. " +
             "Due to YouTube policy, YouTube videos can not be downloaded.")
@@ -335,27 +362,32 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun mediaRows(): List<Row> = listOf(
         sw(K.MEDIA_DETECT, "Video manager button", true,
-            "When a page plays video, a button appears that you can drag. Tap it to play or save the video, stream or subtitles. " +
-                "Some sites need to start playing before the video is found."),
+            "When video is detected, a button will appear on the screen.\nSome sites need to play the video before the video is detected."),
         Gap,
         Note("Due to YouTube policy, YouTube videos can not be downloaded.")
     )
 
     private fun memoryRows(): List<Row> = listOf(
-        ch("mem_tab_limit", "Tabs kept in memory", listOf("Unlimited", "3", "5", "10"), 0,
-            "When more tabs are open than the limit, the ones farthest from the current tab are released and reload when you open them. Incognito tabs are never released.",
+        Head(ic("outline_filter_none"), "Tab"),
+        ch(K.TAB_OPEN_LIMIT, "Open limit", listOf("Unlimited", "5", "10", "20", "50"), 0,
+            "If you exceed the limit, the first tab will be automatically deleted.\nIf too many tabs are open, the browser may slow down.",
+            values = listOf(0, 5, 10, 20, 50)) { },
+        ch("mem_tab_limit", "Memory limit", listOf("Unlimited", "3", "5", "10"), 0,
+            "If you exceed the limit, memory is automatically released starting with the farthest tabs.\nIf too many tabs are open, the browser may slow down.",
             values = listOf(0, 3, 5, 10)),
-        Gap,
-        Note("When Android is low on memory, Orbit also releases background tabs on its own.")
+        sites("Memory release prevention list", K.MEM_KEEP, "Tabs of these sites are never released.")
     )
 
     private fun displayRows(): List<Row> = listOf(
         ch(K.THEME, "UI", listOf("System", "Light", "Dark"), 2) { OrbitApp.applyNightMode(prefs.int(K.THEME)) },
-        sw(K.PAGE_DARK, "Web page dark mode", false, "Darkens page colours, keeps images normal."),
+        sw(K.PAGE_DARK, "Web page", false, "Darkens page colours, keeps images normal."),
+        Gap,
+        ch(K.SCREEN_FILTER, "Screen filter", listOf("Not used", "Weak", "Normal", "Strong"), 0),
+        col(K.FILTER_COLOR, "Filter color", 0xFF000000.toInt()),
         Gap,
         ch(K.BRIGHTNESS, "Brightness", listOf("System", "Low", "Medium", "High"), 0, "Depends on system setting"),
         ch(K.SCREEN_TIMEOUT, "Screen timeout", listOf("System", "Always on"), 0, "Depends on system setting"),
-        ch(K.ROTATION, "Screen rotation", listOf("Auto", "Portrait", "Landscape"), 0)
+        ch(K.ROTATION, "Screen rotation", listOf("System", "Portrait", "Landscape"), 0, "Depends on system setting")
     )
 
     private fun layoutRows(): List<Row> = listOf(
@@ -371,22 +403,24 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun tabRows(): List<Row> = listOf(
-        ch("tab_add_pos", "Where to add tabs", listOf("Next to the current tab", "End of the list"), 0) {
+        ch("tab_add_pos", "Where to add tabs", listOf("Next to the current tab", "End of tab list"), 0) {
             prefs.setBool(K.TAB_NEXT, prefs.int("tab_add_pos") == 0)
         },
+        sw(K.TAB_BAR, "Show tab bar", true),
         ch(K.TAB_VIEW, "Tab list style", listOf("Grid", "List", "Small list"), 0),
         Gap,
-        sw(K.KEEP_TABS, "Restore tabs on launch", true)
+        sw(K.KEYBOARD_ADD, "Activate keyboard when adding tab", false),
+        sw(K.HOME_CLOSE_ALL, "Click on the homepage icon to close all tabs", false)
     )
 
     private fun compositionRows(): List<Row> = listOf(
-        Nav(R.drawable.ic_fullscreen, "Full screen and Toolbar", "fullscreen"),
+        Nav(ic("outline_fullscreen"), "Full screen and Toolbar", "fullscreen"),
         Gap,
-        ch(K.ADDR_LABEL, "Address bar label", listOf("Domain", "Title", "Full address"), 0),
+        ch(K.ADDR_LABEL, "Address bar label", listOf("Domain", "Title", "URL"), 0),
         Gap,
         sw(K.PULL_REFRESH, "Pull to refresh", true),
         sw(K.BACK_TOP, "Back to top button", true),
-        ch(K.SHOW_SCROLLBAR, "Show scroll bar", listOf("Don't show", "Show"), 0),
+        ch(K.SHOW_SCROLLBAR, "Show scroll bar", listOf("Not used", "Show"), 0),
         sw(K.VOL_SCROLL, "Scroll web pages with volume keys", false)
     )
 
@@ -398,8 +432,9 @@ class SettingsActivity : AppCompatActivity() {
     private fun webContentRows(): List<Row> = listOf(
         ch(K.TEXT_ZOOM, "Text size", listOf("80%", "90%", "100%", "115%", "130%", "150%"), 100,
             values = listOf(80, 90, 100, 115, 130, 150)),
-        sw("allow_zoom", "Allow pinch zoom", true),
-        sw(K.IMAGES_OFF, "Block images", false, "Saves data; pages load faster.")
+        Gap,
+        sw(K.IMAGES_OFF, "Show images", true, "Display images of a webpage.", inv = true),
+        sw("allow_zoom", "Zoom in with two fingers", true)
     )
 
     private fun gestureRows(): List<Row> = listOf(
@@ -408,7 +443,7 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun translatorRows(): List<Row> = listOf(
-        ch(K.TR_LANG, "Translate into", Langs.labels, 0, "System follows your phone language. Used by Translate in the menu.")
+        ch(K.TR_LANG, "Language", Langs.labels, 0, "System follows your phone language. Used by Translate in the menu.")
     )
 
     private fun ttsRows(): List<Row> = listOf(
@@ -417,7 +452,9 @@ class SettingsActivity : AppCompatActivity() {
         act("System text-to-speech settings", "Voice and language are set in Android.") {
             try { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
             catch (_: Exception) { toast("Open Android settings > Text-to-speech") }
-        }
+        },
+        Gap,
+        Note("Supported languages depend on the TTS engine being used. TTS engine can be changed in device settings.")
     )
 
     private fun tvCastRows(): List<Row> = listOf(
@@ -430,33 +467,58 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun securityRows(): List<Row> = listOf(
-        sw(K.HTTPS_FIRST, "HTTPS first", true, "Tries https:// before http://"),
-        sw(K.SSL_BLOCK, "Block pages with certificate errors", true),
-        sw(K.SAFE_BROWSING, "Safe Browsing", true, "Warns about dangerous sites.")
-    )
-
-    private fun incognitoRows(): List<Row> = listOf(
-        sw(K.INCOG_SECURE, "Hide incognito in recent apps", true),
-        sw(K.KEY_SECURE, "Incognito keyboard privacy", true, "Asks the keyboard not to learn what you type.")
-    )
-
-    private fun passwordRows(): List<Row> = listOf(
         sw(K.APP_LOCK, "App lock", false, "Asks for your device PIN, pattern, password or fingerprint.") {
             val km = getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
             if (prefs.appLock && !km.isDeviceSecure) {
                 prefs.setBool(K.APP_LOCK, false)
-                toast("Set a screen lock in Android settings first")
+                toast("Please set up a lock screen first.")
                 adapter.notifyDataSetChanged()
             }
-        }
+        },
+        sw(K.SAFE_BROWSING, "Block harmful sites", true, "Warns about dangerous sites using Google Safe Browsing.")
+    )
+
+    private fun incognitoRows(): List<Row> = listOf(
+        sw(K.KEY_SECURE, "Keyboard security", true,
+            "It does not save what you type on the keyboard.\nSome keyboards may not be supported."),
+        sw(K.INCOG_SECURE, "Android Screenshot", true, "Applies to incognito mode only", inv = true),
+        Gap,
+        Note("Incognito tabs never store history, cookies or form data.")
+    )
+
+    private fun passwordRows(): List<Row> = listOf(
+        act("Autofill service", "Choose a password manager that fills logins in Orbit.") {
+            try {
+                startActivity(Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE, Uri.parse("package:")))
+            } catch (_: Exception) { toast("Open Android settings > Passwords & accounts") }
+        },
+        Gap,
+        Note("Orbit does not store passwords itself. Your phone's autofill service saves and fills them.")
     )
 
     private fun clearDataRows(): List<Row> = listOf(
-        sw(K.EXIT_HISTORY, "Delete history on exit", false),
-        sw(K.EXIT_COOKIES, "Delete cookies and site data on exit", false),
-        sw(K.EXIT_CACHE, "Delete cache on exit", false),
+        sw(K.SAVE_HISTORY, "Save history", true),
         Gap,
-        act("Clear browsing data now") { clearNow() }
+        Head(0, "Select items to delete when app exits"),
+        sw(K.EXIT_HISTORY, "History", false),
+        sw(K.EXIT_COOKIES, "Cookie", false),
+        sw(K.EXIT_CACHE, "Cache", false),
+        Gap,
+        Note("When the app is closed, the selected item is deleted."),
+        Gap,
+        act("Clear data", "Accumulation of stale data can slow down your browser. It is a good idea to clean up your data periodically.") { clearNow() }
+    )
+
+    private fun infoRows(): List<Row> = listOf(
+        act("App version", "", { try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (_: Exception) { "" } }),
+        act("Open source licenses", "") {
+            AlertDialog.Builder(this).setTitle("Open source licenses")
+                .setMessage("Orbit uses AndroidX, Material Components and Kotlin (Apache 2.0), and the Android System WebView.\n\nThanks to the open source developers. ❤")
+                .setPositiveButton("OK", null).show()
+        },
+        act("Source code", "github.com/darkdesign69/OrbitBrowser") {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/darkdesign69/OrbitBrowser")))
+        }
     )
 
     private val dnsNames = listOf("System default", "Cloudflare", "Google", "Quad9", "CleanBrowsing", "AdGuard")
@@ -510,7 +572,8 @@ class SettingsActivity : AppCompatActivity() {
             val v = h.itemView
             if (r is Gap) return
             if (r is Head) {
-                v.findViewById<ImageView>(R.id.headerIcon).setImageResource(r.icon)
+                val hi = v.findViewById<ImageView>(R.id.headerIcon)
+                if (r.icon == 0) hi.visibility = View.GONE else { hi.visibility = View.VISIBLE; hi.setImageResource(r.icon) }
                 v.findViewById<TextView>(R.id.headerText).text = r.text
                 return
             }
@@ -557,10 +620,10 @@ class SettingsActivity : AppCompatActivity() {
                     title.text = r.title
                     infoText = r.info
                     sw.visibility = View.VISIBLE
-                    sw.isChecked = prefs.bool(r.key)
+                    sw.isChecked = prefs.bool(r.key) != r.inv
                     body.setOnClickListener {
                         prefs.setBool(r.key, !prefs.bool(r.key))
-                        sw.isChecked = prefs.bool(r.key)
+                        sw.isChecked = prefs.bool(r.key) != r.inv
                         r.after?.invoke()
                     }
                 }
@@ -632,7 +695,20 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun openPage(p: String) {
+        when (p) {
+            "rate" -> { link("https://github.com/darkdesign69/OrbitBrowser"); return }
+            "feedback" -> { link("https://github.com/darkdesign69/OrbitBrowser/issues"); return }
+            "recommend" -> {
+                startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_TEXT, "Orbit Browser - open-source Android browser: https://github.com/darkdesign69/OrbitBrowser"), "Recommend to a friend"))
+                return
+            }
+        }
         startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", p))
+    }
+
+    private fun link(u: String) {
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } catch (_: Exception) { toast("No browser found") }
     }
 
     private fun rowTitle(r: Row): String? = when (r) {

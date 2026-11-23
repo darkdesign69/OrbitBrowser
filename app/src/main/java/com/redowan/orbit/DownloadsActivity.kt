@@ -57,6 +57,13 @@ class DownloadsActivity : AppCompatActivity() {
         findViewById<View>(R.id.dlSettings).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", "download"))
         }
+        findViewById<View>(R.id.dlHeadTitle).setOnClickListener {
+            Ui.listSheet(this, null, listOf(
+                "Bookmarks" to { startActivity(Intent(this, LibraryActivity::class.java).putExtra("mode", "bookmarks")); finish() },
+                "History" to { startActivity(Intent(this, LibraryActivity::class.java).putExtra("mode", "history")); finish() },
+                "Downloads" to { }
+            ))
+        }
         empty = findViewById(R.id.dlEmpty)
         adapter = Adapter()
         val list = findViewById<RecyclerView>(R.id.dlList)

@@ -63,7 +63,28 @@ Delivery 14 (UNVERIFIED by compile; build log is the test):
   empty answer with a matching MIME type + CORS header; (3) "Remove overlays" JS (off by default) only removes true full-screen
   fixed modals instead of any big fixed element; (4) databaseEnabled, onCloseWindow closes popup tabs, cookies flushed in onPause.
 - Typeface: setTypeface(null, style) calls replaced so the custom font is kept.
-Not done (next): tab switcher and Library screens to Soul's look, element inspection/block area, floating buttons,
+Delivery 15 (UNVERIFIED by compile; from the user's Soul vs Orbit download videos and a new request list):
+- Downloads (Media.kt, MediaUi.kt, MainActivity.startDownload): HLS now supports #EXT-X-BYTERANGE and EXT-X-MAP BYTERANGE (Range requests;
+  sites such as Eporner serve one fMP4 file cut into ranges: before, every "segment" was the whole file so the result was wrong/instant),
+  parallel segment fetch (Fast download x1-x10), retries (Settings > Download > Number of retries), concurrent limit (waitTurn),
+  junk URLs ("_TPL_", templates) are no longer listed, "no video data" check. Tapping a media row opens a Soul-style dialog (Name,
+  location, share/info/play, Download / Fast download); HLS master playlists first ask the quality (resolution shown like Soul).
+  Settings > Download: Download manager Default/Other apps (Other apps = system app picker, ACTION_VIEW + referer/UA extras, own app
+  excluded, works for page downloads and media), Fast download, retries, concurrent download. Not done: Background state timeout,
+  Report site, custom download folder.
+- Desktop mode: DESKTOP_JS forces viewport width=1280 (MutationObserver keeps it), applied on page start/commit/finish; menu label follows
+  the effective state; zoom allowed. Limit: if "Desktop site for all" is on in settings the per-tab toggle cannot switch it off.
+- Tab swipe: MainActivity.dispatchTouchEvent: swipe left/right on the address bar (or tab bar when it doesn't scroll) selects the tab on
+  that side (left = tab on the left, as the user asked). Setting: Tab > "Swipe address bar to switch tabs" (tab_swipe_switch).
+- Library: Bookmarks / History / Downloads share one header dropdown ("Bookmarks v", in LibraryActivity and DownloadsActivity).
+  Opened without result (from Downloads) it hands the link to MainActivity via ACTION_VIEW. Not done: Soul's full "All" combined list.
+- Base for this delivery = the user's orbit-full_16.zip (another Claude account made deliveries 12-14). The repo zip can be older.
+- Blank page bug (user video: Eporner tab has title, favicon and detected media but the page area shows the wallpaper): ROOT CAUSE NOT
+  CONFIRMED (YouTube renders fine in the same build). Defensive fix: createWebView sets an opaque WebView background (black in night
+  mode) and LAYER_TYPE_NONE; showTab wakes the page (visibility, alpha, onResume, resumeTimers, requestLayout). If it still happens, ask
+  for a screenshot with Customize theme set to "No background" and test with the font switch (Display > App font on websites) off:
+  MainActivity.fontJs injects a CSS rule with !important on every element and is the next suspect.
+Not done (next): tab switcher visuals, full Soul Library', to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 
 Tools: tools/soul/*.py decode Soul's binary XML, resources.arsc and DEX without apktool (see docs/). The Soul APK/XAPK is

@@ -36,6 +36,13 @@
    transparency, blur, dark overlay) working the same way in the browser, SourceCodePro-Regular.ttf as default font for the whole
    app and every website, and a fix for websites that do not load fully. See HANDOFF.md "Delivery 14".
 
+10. Delivery 15: user sent two screen recordings (Soul vs Orbit download flow on a site with HLS), screenshots of Soul's Download settings
+   (Download manager Default/Other apps, location, Fast download x10, retries 10, concurrent, background timeout, notification,
+   report site), and asked for: swipe left/right to switch tabs, Library screen, desktop mode like Soul, downloads that work, and the
+   "Other apps" download manager. Findings from the videos: Soul lists detected media then shows a Name/location/Download/Fast download
+   dialog, then the Library "All" list with progress; Orbit listed junk ("_TPL_") and finished a 630x360 stream instantly. See HANDOFF
+   "Delivery 15".
+
 ## 4. Reverse-engineering method (no apktool available)
 - Python decoders in tools/soul/: axml (binary XML), resources.arsc, DEX reader, page scanner (decode_all.py, pages.py).
 - Soul's class names are not obfuscated (com.mycompany.app.setting.*, DialogTabMain ...). Resource ids are read from `sget` of

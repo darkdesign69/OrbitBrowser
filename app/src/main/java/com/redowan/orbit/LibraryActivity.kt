@@ -28,8 +28,12 @@ class LibraryActivity : AppCompatActivity() {
     private var all: List<Entry> = emptyList()
     private var shown: List<Entry> = emptyList()
     private var query = ""
-    private val isBookmarks get() = intent.getStringExtra("mode") != "history"
+    private var modeNow = "bookmarks"
+    private val isBookmarks get() = modeNow != "history"
     private val adapter = EntryAdapter()
+    private lateinit var titleView: TextView
+
+    private fun updateTitle() { titleView.text = (if (isBookmarks) "Bookmarks" else "History") + "  \u25BE" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +45,16 @@ class LibraryActivity : AppCompatActivity() {
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
 
-        findViewById<TextView>(R.id.libTitle).text = if (isBookmarks) "Bookmarks" else "History"
+        modeNow = if (intent.getStringExtra("mode") == "history") "history" else "bookmarks"
+        titleView = findViewById(R.id.libTitle)
+        updateTitle()
+        titleView.setOnClickListener {
+            Ui.listSheet(this, null, listOf(
+                "Bookmarks" to { modeNow = "bookmarks"; updateTitle(); reload() },
+                "History" to { modeNow = "history"; updateTitle(); reload() },
+                "Downloads" to { startActivity(Intent(this, DownloadsActivity::class.java)); finish() }
+            ))
+        }
         findViewById<View>(R.id.libBack).setOnClickListener { finish() }
         findViewById<View>(R.id.libClear).setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
@@ -75,6 +88,13 @@ class LibraryActivity : AppCompatActivity() {
     }
 
     private fun pick(e: Entry, mode: String) {
+        if (callingActivity == null) {
+            // opened from the Downloads screen: hand the address to the browser window
+            startActivity(Intent(this, MainActivity::class.java)
+                .setAction(Intent.ACTION_VIEW).setData(android.net.Uri.parse(e.url))
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            finish(); return
+        }
         setResult(RESULT_OK, Intent().putExtra("url", e.url).putExtra("mode", mode))
         finish()
     }

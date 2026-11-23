@@ -173,18 +173,42 @@ object MediaUi {
 
     // ------------------------------------------------------------------ actions
 
+    /** Hands a link to another app (1DM, ADM, a file manager ...). Used when Download manager is "Other apps". */
+    fun openWithOtherApp(a: MainActivity, url: String, mime: String?, referer: String?, title: String?) {
+        val view = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+            setDataAndType(android.net.Uri.parse(url), mime?.takeIf { it.isNotEmpty() } ?: "video/*")
+            putExtra("title", title ?: "")
+            putExtra("android.intent.extra.REFERRER", android.net.Uri.parse(referer ?: url))
+            putExtra("referer", referer ?: "")
+            putExtra("user_agent", a.userAgent())
+            cookieFor(url)?.let { putExtra("cookie", it) }
+            putExtra("headers", arrayOf("Referer", referer ?: url, "User-Agent", a.userAgent()))
+        }
+        val own = a.packageManager.queryIntentActivities(view, 0)
+            .filter { it.activityInfo.packageName == a.packageName }
+            .map { android.content.ComponentName(it.activityInfo.packageName, it.activityInfo.name) }
+        val chooser = android.content.Intent.createChooser(view, "Download with")
+        if (own.isNotEmpty()) chooser.putExtra(android.content.Intent.EXTRA_EXCLUDE_COMPONENTS, own.toTypedArray())
+        try { a.startActivity(chooser) } catch (_: Exception) { a.toast("No app can download this") }
+    }
+
+    private fun cleanName(t: String?): String =
+        (t ?: "").replace(Regex("[\\\\/:*?\"<>|\\n\\r]"), " ").replace(Regex("\\s+"), " ").trim().take(80)
+
     private fun download(a: MainActivity, m: MediaItem) {
         if (!m.downloadable) { a.toast("Orbit can't download DASH streams yet. Use Play."); return }
         val running = Downloader.jobFor(m)
         if (running != null && running.state == 0) { a.toast("Already downloading"); return }
-        a.requestNotifications()
         val ua = a.userAgent()
         val cookie = cookieFor(m.url)
-        if (m.kind != MediaKind.HLS) {
-            Downloader.start(a, m, null, ua, cookie)
-            a.toast("Downloading ${m.name}")
+        val pageTitle = cleanName(a.cur.title).ifEmpty { m.name }
+        if (a.prefs.int("dl_mgr") == 1) {
+            a.toast("Choose an app")
+            openWithOtherApp(a, m.url, if (m.kind == MediaKind.HLS) "application/x-mpegURL" else null, m.referer ?: a.cur.url, pageTitle)
             return
         }
+        a.requestNotifications()
+        if (m.kind != MediaKind.HLS) { askDialog(a, m, null, pageTitle, ua, cookie); return }
         // stream: offer the available qualities when it is a master playlist
         Thread {
             val body = try { Downloader.fetchText(m.url, m, ua, cookie) } catch (_: Exception) { null }
@@ -192,17 +216,53 @@ object MediaUi {
                 val vs = if (body != null && Hls.isMaster(body)) Hls.variants(body, m.url).sortedByDescending { it.bandwidth } else emptyList()
                 if (vs.size > 1) {
                     Ui.listSheet(a, "Quality", vs.map { v ->
-                        val res = v.resolution?.substringAfter('x')?.let { "${it}p" } ?: "Auto"
-                        ("$res   ·   ${v.bandwidth / 1000} kbps") to {
-                            Downloader.start(a, m, v.url, ua, cookie); a.toast("Downloading ${m.name}")
-                        }
+                        val res = v.resolution ?: (if (v.bandwidth > 0) "${v.bandwidth / 1000} kbps" else "Auto")
+                        res to { askDialog(a, m, v.url, "$pageTitle $res".trim(), ua, cookie) }
                     })
-                } else {
-                    Downloader.start(a, m, null, ua, cookie)
-                    a.toast("Downloading ${m.name}")
-                }
+                } else askDialog(a, m, null, pageTitle, ua, cookie)
             }
         }.start()
+    }
+
+    /** Soul-style download dialog: name, location, share/info/play and Download / Fast download. */
+    private fun askDialog(a: MainActivity, m: MediaItem, variantUrl: String?, defName: String, ua: String, cookie: String?) {
+        val box = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(22), a.dp(16), a.dp(22), a.dp(8)) }
+        fun small(t: String) = TextView(a).apply { text = t; textSize = 12f; setTextColor(a.color(R.color.text_sub)) }
+        box.addView(small("Name"))
+        val nameField = android.widget.EditText(a).apply {
+            setText(defName); setSingleLine(true); setTextColor(a.color(R.color.text)); textSize = 15f
+        }
+        box.addView(nameField)
+        box.addView(View(a), LinearLayout.LayoutParams(1, a.dp(14)))
+        val loc = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
+        val locText = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        locText.addView(small("Download location"))
+        locText.addView(TextView(a).apply { text = "Device/Download/Orbit"; textSize = 15f; setTextColor(a.color(R.color.text)) })
+        loc.addView(locText, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        loc.addView(iconButton(a, R.drawable.ic_share, "Share link") {
+            a.startActivity(android.content.Intent.createChooser(
+                android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(android.content.Intent.EXTRA_TEXT, m.url), "Share"))
+        })
+        loc.addView(iconButton(a, R.drawable.ic_info, "Details") { info(a, m) })
+        if (m.playable) loc.addView(iconButton(a, R.drawable.ic_play_arrow, "Play") { a.playMedia(m, false) })
+        box.addView(loc)
+        val btns = LinearLayout(a).apply { setPadding(0, a.dp(10), 0, 0) }
+        lateinit var dlg: androidx.appcompat.app.AppCompatDialog
+        fun go(fast: Boolean) {
+            val n = cleanName(nameField.text.toString()).ifEmpty { defName }
+            dlg.dismiss()
+            Downloader.start(a, m, variantUrl, ua, cookie, n, fast)
+            a.toast("Download started")
+        }
+        fun textBtn(t: String, run: () -> Unit) = TextView(a).apply {
+            text = t; textSize = 15f; gravity = Gravity.CENTER; setTextColor(a.color(R.color.text))
+            setPadding(0, a.dp(14), 0, a.dp(14)); setOnClickListener { run() }
+        }
+        btns.addView(textBtn("Download") { go(false) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        btns.addView(textBtn("Fast download") { go(true) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        box.addView(btns)
+        dlg = Ui.sheet(a, box)
     }
 
     private fun info(a: MainActivity, m: MediaItem) {

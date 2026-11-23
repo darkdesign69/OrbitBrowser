@@ -22,11 +22,12 @@
             android:src="@drawable/ic_back" />
 
         <TextView
+            android:id="@+id/dlHeadTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Downloads"
+            android:text="Downloads  \u25BE"
             android:textColor="@color/text"
             android:textSize="20sp" />
 

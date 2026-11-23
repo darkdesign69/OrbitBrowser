@@ -270,6 +270,52 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    private var swipeGd: android.view.GestureDetector? = null
+    private var swipeActive = false
+
+    /** Swipe left / right on the address bar or tab bar to go to the tab on that side. */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (prefs.bool("tab_swipe_switch") && ::addrRow.isInitialized && tabs.size > 1) {
+            if (swipeGd == null) {
+                swipeGd = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+                    override fun onDown(e: android.view.MotionEvent) = true
+                    override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, vx: Float, vy: Float): Boolean {
+                        val dx = e2.x - (e1?.x ?: e2.x)
+                        val dy = e2.y - (e1?.y ?: e2.y)
+                        if (Math.abs(dx) < dp(56) || Math.abs(dx) < Math.abs(dy) * 1.5f) return false
+                        val to = if (dx < 0) current - 1 else current + 1     // swipe left: tab on the left
+                        if (to !in tabs.indices) return false
+                        select(to)
+                        return true
+                    }
+                })
+            }
+            if (ev.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                swipeActive = inside(addrRow, ev) || (tabBarRow.visibility == View.VISIBLE && inside(tabBarRow, ev) && !tabStripScrolls())
+            }
+            if (swipeActive) {
+                val flung = swipeGd!!.onTouchEvent(ev)
+                if (flung && ev.actionMasked == android.view.MotionEvent.ACTION_UP) {
+                    swipeActive = false
+                    val c = android.view.MotionEvent.obtain(ev)
+                    c.action = android.view.MotionEvent.ACTION_CANCEL
+                    super.dispatchTouchEvent(c); c.recycle()
+                    return true
+                }
+                if (ev.actionMasked == android.view.MotionEvent.ACTION_UP || ev.actionMasked == android.view.MotionEvent.ACTION_CANCEL) swipeActive = false
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun inside(v: View, ev: android.view.MotionEvent): Boolean {
+        val r = IntArray(2); v.getLocationOnScreen(r)
+        return v.visibility == View.VISIBLE && ev.rawX >= r[0] && ev.rawX <= r[0] + v.width && ev.rawY >= r[1] && ev.rawY <= r[1] + v.height
+    }
+
+    /** When the tab strip is wider than the screen it scrolls sideways itself, so the swipe is left to it. */
+    private fun tabStripScrolls() = tabStrip.canScrollHorizontally(-1) || tabStrip.canScrollHorizontally(1)
+
     override fun dispatchKeyEvent(e: KeyEvent): Boolean {
         if (prefs.volScroll && !cur.home && cur.web != null &&
             (e.keyCode == KeyEvent.KEYCODE_VOLUME_UP || e.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)
@@ -754,6 +800,12 @@ class MainActivity : AppCompatActivity() {
             webHolder.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             webHolder.visibility = View.VISIBLE
             startList.visibility = View.GONE
+            // a page that was created in the background (popup, restored tab) must be awake and drawn
+            w.visibility = View.VISIBLE
+            w.alpha = 1f
+            w.onResume()
+            w.resumeTimers()
+            w.post { w.requestLayout(); w.invalidate() }
         }
         urlField.imeOptions = EditorInfo.IME_ACTION_GO or
             (if (t.incognito && prefs.keySecure) EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING else 0)
@@ -922,6 +974,14 @@ class MainActivity : AppCompatActivity() {
         return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$v Safari/537.36"
     }
 
+    private fun isDesktop(tab: Tab) = tab.desktop || prefs.desktopAll || prefs.int(K.UA) == 1
+
+    /** Desktop site: pages lay out on a 1280px wide canvas (like Chrome's "Desktop site"), not the phone width. */
+    private fun injectDesktopView(tab: Tab, view: WebView) {
+        if (!isDesktop(tab)) return
+        view.evaluateJavascript(DESKTOP_JS, null)
+    }
+
     private fun applyWebSettings(tab: Tab) {
         val w = tab.web ?: return
         val s = w.settings
@@ -934,7 +994,10 @@ class MainActivity : AppCompatActivity() {
         }
         s.useWideViewPort = true
         s.loadWithOverviewMode = true
-        s.textZoom = prefs.textZoom
+        s.setSupportZoom(true)
+        s.builtInZoomControls = true
+        s.displayZoomControls = false
+        s.textZoom = if (desktop || uaMode == 1) 100 else prefs.textZoom
         s.setSupportZoom(prefs.bool("allow_zoom"))
         s.domStorageEnabled = prefs.bool("adv_dom_storage")
         s.mixedContentMode = if (prefs.bool("adv_mixed")) WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE else WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -963,6 +1026,11 @@ class MainActivity : AppCompatActivity() {
             safeBrowsingEnabled = prefs.safeBrowsing
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
         }
+        // an opaque background: the wallpaper behind the app must never show through a page
+        val night = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        w.setBackgroundColor(if (night) Color.BLACK else Color.WHITE)
+        w.setLayerType(View.LAYER_TYPE_NONE, null)
         w.webViewClient = client(tab)
         w.webChromeClient = chrome(tab)
         w.setDownloadListener { url, ua, cd, mime, _ -> startDownload(url, ua, cd, mime, tab.url) }
@@ -999,6 +1067,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+            injectDesktopView(tab, view)
             tab.loading = true
             tab.progress = 0
             tab.home = false
@@ -1011,11 +1080,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPageCommitVisible(view: WebView, url: String?) {
+            injectDesktopView(tab, view)
             injectPageDark(view)
             injectFont(view)
         }
 
         override fun onPageFinished(view: WebView, url: String?) {
+            injectDesktopView(tab, view)
             tab.loading = false
             tab.progress = 100
             val title = view.title ?: ""
@@ -1315,6 +1386,7 @@ class MainActivity : AppCompatActivity() {
             !url.startsWith("http") -> { toast("This download type isn't supported"); return }
         }
         val name = URLUtil.guessFileName(url, cd, mime).replace('/', '_').ifBlank { "download" }
+        if (prefs.int("dl_mgr") == 1) { MediaUi.openWithOtherApp(this, url, mime, referer, name); return }
         val go = { enqueueDownload(url, ua, mime, referer, name) }
         if (prefs.bool("dl_ask")) {
             androidx.appcompat.app.AlertDialog.Builder(this)
@@ -1607,8 +1679,8 @@ class MainActivity : AppCompatActivity() {
             })
             "site" -> ME(R.drawable.ic_lock, "Site settings", false, needPage { siteSettings(it) })
             "incognito" -> ME(R.drawable.ic_incognito, "Incognito mode") { newTab(null, true) }
-            "desktop" -> ME(R.drawable.ic_desktop, if (t.desktop) "Mobile" else "Desktop", false, needPage {
-                it.desktop = !it.desktop; applyWebSettings(it); it.web?.reload()
+            "desktop" -> ME(R.drawable.ic_desktop, if (isDesktop(t)) "Mobile" else "Desktop", false, needPage {
+                it.desktop = !isDesktop(it); applyWebSettings(it); it.web?.reload()
             })
             "dns" -> ME(R.drawable.ic_key, "DNS") {
                 startActivity(Intent(this, SettingsActivity::class.java).putExtra("page", "dns"))
@@ -1758,8 +1830,8 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, DownloadsActivity::class.java))
             },
             MenuItem(R.drawable.ic_search, "Find in page") { openFind() },
-            MenuItem(R.drawable.ic_desktop, if (t.desktop) "Mobile site" else "Desktop site", needPage {
-                it.desktop = !it.desktop; applyWebSettings(it); it.web?.reload()
+            MenuItem(R.drawable.ic_desktop, if (isDesktop(t)) "Mobile site" else "Desktop site", needPage {
+                it.desktop = !isDesktop(it); applyWebSettings(it); it.web?.reload()
             }),
             MenuItem(R.drawable.ic_dark, if (prefs.pageDark) "Light pages" else "Dark pages") {
                 prefs.setBool(K.PAGE_DARK, !prefs.pageDark)
@@ -2042,6 +2114,12 @@ class MainActivity : AppCompatActivity() {
                 "s.textContent='html{filter:invert(1) hue-rotate(180deg)!important;background:#fff!important}" +
                 "img,video,picture,canvas,iframe,svg image{filter:invert(1) hue-rotate(180deg)!important}';" +
                 "(document.head||document.documentElement).appendChild(s)})()"
+
+        private const val DESKTOP_JS =
+            "(function(){function f(){var m=document.querySelector('meta[name=viewport]');" +
+                "if(!m){m=document.createElement('meta');m.name='viewport';(document.head||document.documentElement).appendChild(m)}" +
+                "if((m.getAttribute('content')||'').indexOf('width=1280')<0)m.setAttribute('content','width=1280,minimum-scale=0.1,maximum-scale=5,user-scalable=yes')}" +
+                "f();if(!window.__orbitDesk){window.__orbitDesk=1;new MutationObserver(f).observe(document.documentElement,{childList:true,subtree:true})}})()"
 
         private const val IPHONE_UA =
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"

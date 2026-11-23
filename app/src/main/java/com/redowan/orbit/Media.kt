@@ -58,6 +58,7 @@ object MediaDetector {
     /** Decides from the address alone. Returns kind and extension, or null when it isn't media. */
     fun classify(url: String): Pair<MediaKind, String>? {
         if (!url.startsWith("http")) return null
+        if (url.contains("_TPL_") || url.contains("%s") || url.contains("{{") || url.contains("\${") || url.contains("%7B%7B")) return null
         val path = (Uri.parse(url).path ?: return null).lowercase()
         val ext = path.substringAfterLast('.', "")
         return when {
@@ -74,8 +75,8 @@ object MediaDetector {
 /** HLS playlist helpers (own implementation of the public RFC 8216 format). */
 object Hls {
     class Variant(val url: String, val bandwidth: Long, val resolution: String?)
-    class Seg(val url: String, val keyUri: String?, val iv: String?, val seq: Long)
-    class Playlist(val segs: List<Seg>, val mapUri: String?, val sampleAes: Boolean)
+    class Seg(val url: String, val keyUri: String?, val iv: String?, val seq: Long, val off: Long = -1, val len: Long = -1)
+    class Playlist(val segs: List<Seg>, val mapUri: String?, val sampleAes: Boolean, val mapOff: Long = -1, val mapLen: Long = -1)
 
     private val ATTR = Regex("([A-Z0-9-]+)=(\"[^\"]*\"|[^,]*)")
 
@@ -109,7 +110,12 @@ object Hls {
         var keyUri: String? = null
         var iv: String? = null
         var map: String? = null
+        var mapOff = -1L
+        var mapLen = -1L
         var sample = false
+        var rangeLen = -1L
+        var rangeOff = -1L
+        val ends = HashMap<String, Long>()
         for (raw in text.lines()) {
             val line = raw.trim()
             if (line.isEmpty()) continue
@@ -122,13 +128,32 @@ object Hls {
                     else -> sample = true
                 }
             } else if (line.startsWith("#EXT-X-MAP:")) {
-                map = attrs(line)["URI"]?.let { resolve(base, it) }
+                val a = attrs(line)
+                map = a["URI"]?.let { resolve(base, it) }
+                val br = a["BYTERANGE"]
+                if (br != null) {
+                    mapLen = br.substringBefore('@').toLongOrNull() ?: -1L
+                    mapOff = br.substringAfter('@', "0").toLongOrNull() ?: 0L
+                }
+            } else if (line.startsWith("#EXT-X-BYTERANGE:")) {
+                val v = line.substringAfter(':').trim()
+                rangeLen = v.substringBefore('@').toLongOrNull() ?: -1L
+                rangeOff = if (v.contains('@')) v.substringAfter('@').toLongOrNull() ?: -1L else -2L
             } else if (!line.startsWith("#")) {
-                segs.add(Seg(resolve(base, line), keyUri, iv, seq))
+                val u = resolve(base, line)
+                var off = -1L
+                var len = -1L
+                if (rangeLen >= 0) {
+                    off = if (rangeOff >= 0) rangeOff else (ends[u] ?: 0L)
+                    len = rangeLen
+                    ends[u] = off + len
+                }
+                segs.add(Seg(u, keyUri, iv, seq, off, len))
+                rangeLen = -1L; rangeOff = -1L
                 seq++
             }
         }
-        return Playlist(segs, map, sample)
+        return Playlist(segs, map, sample, mapOff, mapLen)
     }
 
     fun ivBytes(seg: Seg): ByteArray {
@@ -156,6 +181,8 @@ object Downloader {
         @Volatile var fileName: String = ""
         @Volatile var cancelled = false
         @Volatile var uri: Uri? = null
+        @Volatile var wantName: String? = null
+        @Volatile var workers = 1
         val startedAt = System.currentTimeMillis()
         val percent: Int get() = if (total > 0) ((done * 100) / total).toInt().coerceIn(0, 100) else -1
     }
@@ -165,7 +192,20 @@ object Downloader {
     /** Called on the main thread whenever a job changes. */
     @Volatile var listener: (() -> Unit)? = null
 
-    private val pool = Executors.newFixedThreadPool(3)
+    private val pool = Executors.newCachedThreadPool()
+    private val running = java.util.concurrent.atomic.AtomicInteger(0)
+
+    /** Waits while the number of running downloads is at the "Concurrent download" limit. */
+    private fun waitTurn(ctx: Context, job: Job) {
+        val limit = Prefs(ctx).int("dl_conc")
+        if (limit <= 0) { running.incrementAndGet(); return }
+        while (true) {
+            if (job.cancelled) throw IllegalStateException("Cancelled")
+            val n = running.get()
+            if (n < limit && running.compareAndSet(n, n + 1)) return
+            try { Thread.sleep(400) } catch (_: InterruptedException) {}
+        }
+    }
     private val main = Handler(Looper.getMainLooper())
     private const val CHANNEL = "orbit_downloads"
     private var nextId = 1000
@@ -209,13 +249,20 @@ object Downloader {
         return job
     }
 
-    fun start(ctx: Context, item: MediaItem, variantUrl: String?, ua: String, cookie: String?): Job {
+    fun start(
+        ctx: Context, item: MediaItem, variantUrl: String?, ua: String, cookie: String?,
+        name: String? = null, fast: Boolean = false
+    ): Job {
         val app = ctx.applicationContext
         val job = Job(item)
+        job.wantName = name?.trim()?.takeIf { it.isNotEmpty() }
+        job.workers = if (fast) Prefs(app).int("dl_fast").coerceIn(1, 10) else 1
         jobs.add(job)
         val id = nextId++
         pool.execute {
+            var counted = false
             try {
+                waitTurn(app, job); counted = true
                 if (item.kind == MediaKind.HLS) hls(app, job, id, variantUrl ?: item.url, ua, cookie)
                 else direct(app, job, id, ua, cookie)
                 job.state = 1
@@ -223,6 +270,7 @@ object Downloader {
                 job.state = 2
                 job.error = e.message ?: e.javaClass.simpleName
             }
+            if (counted) running.decrementAndGet()
             notifyUser(app, job, id, true)
             main.post { listener?.invoke() }
         }
@@ -232,7 +280,7 @@ object Downloader {
 
     // ------------------------------------------------------------ networking
 
-    private fun open(url: String, item: MediaItem, ua: String, cookie: String?): HttpURLConnection {
+    private fun open(url: String, item: MediaItem, ua: String, cookie: String?, off: Long = -1, len: Long = -1): HttpURLConnection {
         val c = URL(url).openConnection() as HttpURLConnection
         c.connectTimeout = 20000
         c.readTimeout = 30000
@@ -242,6 +290,7 @@ object Downloader {
         item.origin?.let { c.setRequestProperty("Origin", it) }
         if (!cookie.isNullOrEmpty()) c.setRequestProperty("Cookie", cookie)
         c.setRequestProperty("Accept", "*/*")
+        if (off >= 0 && len > 0) c.setRequestProperty("Range", "bytes=$off-${off + len - 1}")
         val code = c.responseCode
         if (code !in 200..299) throw IllegalStateException("HTTP $code")
         return c
@@ -252,9 +301,15 @@ object Downloader {
         return c.inputStream.bufferedReader().use { it.readText() }
     }
 
-    private fun bytes(url: String, item: MediaItem, ua: String, cookie: String?): ByteArray {
-        val c = open(url, item, ua, cookie)
-        return c.inputStream.use { it.readBytes() }
+    private fun bytes(url: String, item: MediaItem, ua: String, cookie: String?, off: Long = -1, len: Long = -1): ByteArray {
+        val c = open(url, item, ua, cookie, off, len)
+        val all = c.inputStream.use { it.readBytes() }
+        // the server ignored the Range header and sent the whole file: cut the wanted part out
+        if (off >= 0 && len > 0 && c.responseCode == 200 && all.size.toLong() > len) {
+            val from = off.toInt().coerceAtMost(all.size)
+            return all.copyOfRange(from, (from + len).toInt().coerceAtMost(all.size))
+        }
+        return all
     }
 
     // ------------------------------------------------------------ jobs
@@ -263,7 +318,7 @@ object Downloader {
         val item = job.item
         val c = open(item.url, item, ua, cookie)
         job.total = c.contentLengthLong
-        val name = uniqueName(item.name, item.ext)
+        val name = uniqueName(job.wantName ?: item.name, item.ext)
         job.fileName = name
         val sink = Sink(ctx, name)
         try {
@@ -287,20 +342,21 @@ object Downloader {
         if (pl.sampleAes) throw IllegalStateException("This stream uses SAMPLE-AES protection")
         if (pl.segs.isEmpty()) throw IllegalStateException("Stream has no segments")
         val ext = if (pl.mapUri != null) "mp4" else "ts"
-        val name = uniqueName(item.name, ext)
+        val name = uniqueName(job.wantName ?: item.name, ext)
         job.fileName = name
         job.total = pl.segs.size.toLong()
         val sink = Sink(ctx, name)
-        val keys = HashMap<String, ByteArray>()
+        val keys = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
+        val tries = (Prefs(ctx).int("dl_retry") + 1).coerceIn(1, 20)
+        val workers = java.util.concurrent.Executors.newFixedThreadPool(job.workers.coerceIn(1, 10))
         try {
-            pl.mapUri?.let { sink.write(bytes(it, item, ua, cookie)) }
-            for (s in pl.segs) {
-                if (job.cancelled) throw IllegalStateException("Cancelled")
-                var data: ByteArray? = null
+            pl.mapUri?.let { sink.write(bytes(it, item, ua, cookie, pl.mapOff, pl.mapLen)) }
+            fun fetch(s: Hls.Seg): ByteArray {
                 var lastErr: Exception? = null
-                for (attempt in 1..3) {
+                for (attempt in 1..tries) {
+                    if (job.cancelled) throw IllegalStateException("Cancelled")
                     try {
-                        var b = bytes(s.url, item, ua, cookie)
+                        var b = bytes(s.url, item, ua, cookie, s.off, s.len)
                         val ku = s.keyUri
                         if (ku != null) {
                             val key = keys.getOrPut(ku) { bytes(ku, item, ua, cookie) }
@@ -308,19 +364,37 @@ object Downloader {
                             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(Hls.ivBytes(s)))
                             b = cipher.doFinal(b)
                         }
-                        data = b
-                        break
-                    } catch (e: Exception) { lastErr = e }
+                        return b
+                    } catch (e: Exception) {
+                        lastErr = e
+                        try { Thread.sleep(400L * attempt) } catch (_: InterruptedException) {}
+                    }
                 }
-                if (data == null) throw lastErr ?: IllegalStateException("Segment failed")
+                throw lastErr ?: IllegalStateException("Segment failed")
+            }
+            val window = job.workers.coerceIn(1, 10) * 2
+            val pending = java.util.ArrayDeque<java.util.concurrent.Future<ByteArray>>()
+            var next = 0
+            while (next < pl.segs.size && pending.size < window) {
+                val seg = pl.segs[next++]; pending.add(workers.submit(java.util.concurrent.Callable { fetch(seg) }))
+            }
+            var written = 0L
+            while (pending.isNotEmpty()) {
+                if (job.cancelled) throw IllegalStateException("Cancelled")
+                val data = try { pending.poll()!!.get() } catch (e: java.util.concurrent.ExecutionException) { throw (e.cause as? Exception) ?: e }
                 sink.write(data)
+                written += data.size
                 job.done++
+                if (next < pl.segs.size) { val seg = pl.segs[next++]; pending.add(workers.submit(java.util.concurrent.Callable { fetch(seg) })) }
                 notifyUser(ctx, job, id, false)
                 main.post { listener?.invoke() }
             }
+            if (written < 1024) throw IllegalStateException("The stream returned no video data")
             job.uri = sink.finish()
         } catch (e: Exception) {
             sink.abort(); throw e
+        } finally {
+            workers.shutdownNow()
         }
     }
 

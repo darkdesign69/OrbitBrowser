@@ -1,0 +1,59 @@
+# Orbit Browser: full project history (for any Claude or developer continuing the work)
+
+## 1. What the user wants
+- Orbit Browser (Android, package com.redowan.orbit, github.com/darkdesign69/OrbitBrowser) = an open-source "exact zerox copy"
+  of Soul Browser 1.4.86: same look and feel, UI, settings, home screen, icons, "from top to bottom, a to z".
+- Everything editable in Soul must be editable in Orbit (e.g. Settings > Layout: tab bar height/width, bars, items).
+- Every visible option must really work. The user got angry about dead options, a broken UI and a broken download earlier.
+- On every new zip delivered: update HANDOFF.md and this file (user's explicit rule).
+
+## 2. Hard constraints
+- Do not copy Soul's decompiled code, logo, name or launcher icon. Rebuild behaviour from analysis. UI icons are Google
+  Material icons (Apache 2.0) extracted from the APK (res/drawable-xhdpi, drawable-night-xhdpi, aliases ic_*).
+- No Android SDK in the Claude sandbox, no package installs: nothing is compiled there. The GitHub Actions build log is the test.
+  The user sends build-log or app screenshots; fix from them.
+- Delivery: zip with project files at the root (no top folder, no .github), built with
+  `zip -qr orbit-full.zip . -x '.github/*'`. User uploads it to the repo root; the workflow "Apply any zip uploaded in this push"
+  unzips, commits and runs `gradle assembleDebug`. Upload ONCE; wait for the run. Re-runs reuse the old commit; parallel pushes
+  fail with non-fast-forward (optional fix: `git pull --rebase origin main && git push` in the workflow).
+
+## 3. Chronology of the conversation
+1. Asked to analyse the whole Soul app/APK (craft-anything / reverse-engineer-anything) and produce an exact copy.
+2. Clarified: "exactly the same" = everything (settings, home screen, looks, feel).
+3. Showed Soul's home screen (groups) and Layout editor; wants all of it editable.
+4. Asked how another Claude account could continue if the limit hits -> HANDOFF.md created.
+5. Sent 8 screenshots comparing Soul's Tab settings with Orbit's -> Tab page parity work (this delivery).
+6. Asked that every delivery updates the handoff with all analysis and chat data -> this file.
+
+## 4. Reverse-engineering method (no apktool available)
+- Python decoders in tools/soul/: axml (binary XML), resources.arsc, DEX reader, page scanner (decode_all.py, pages.py).
+- Soul's class names are not obfuscated (com.mycompany.app.setting.*, DialogTabMain ...). Resource ids are read from `sget` of
+  R$string / R$drawable fields; scanning a Setting* class's methods yields ordered rows: title, info, icon, pref key.
+- Real icon PNGs live in the density split config.mdpi.apk (res/drawable-xhdpi-v4, 843 files).
+- Output: docs/SOUL_SETTINGS_SPEC.txt (page by page), docs/SOUL_STRINGS.txt.
+- Soul Tab page keys seen: mTabBar2, mTabAccent, mTabColor, mTabAdd, mTabClose, mTabWidth, mTabHeight, mTabSwipeUp3,
+  mTabSwipeDn3, mTabIndi, mTabLoop, mTabRestore, mTabAnim, mTabOpen2, mTabKeypad, mHomeClose, mLastNoti, mLastSwipe, mLastExit,
+  mTabLast, mAutoGroup. Soul tab defaults: colour dark green, width 81%, height 73%, swipe up = Tab list, swipe down = Close tab.
+
+## 5. Code map (app/src/main/java/com/redowan/orbit)
+- Prefs.kt: K constants + DEFAULTS map (any key read outside Settings needs a static default); Prefs.showTabBar = TAB_BAR_MODE != 0.
+- SettingsActivity.kt: row builders (sw, ch, multi, col, act, sites, Nav, Head, Note) and one function per page (tabRows etc.).
+  Layout page launches LayoutActivity; "Edit menu" launches MenuEditorActivity.
+- Bars.kt (Bars catalogue, MenuCat), LayoutActivity.kt, MenuEditorActivity.kt.
+- MainActivity.kt: rebuildBars/fillBar, popup menu from MenuCat, newTab/closeTab (+showUndoBar), back handling (BACK_LAST,
+  LAST_NOTI), setupTabBarSwipe, applyPrefs (tab bar above/below address bar), applyDisplayPrefs.
+- TabViews.kt: TabStyle (colours, size), TabStripAdapter (outline, colour, close button), TabSwitcher (grid/list/small list).
+- Kotlin gotcha: a trailing lambda binds to the LAST parameter; keep callback params last.
+- Theme is AppCompat, not Material: Snackbar throws. Use custom views/AlertDialog.
+
+## 6. Errors met and fixes
+- Compile error "Type mismatch () -> Unit but Boolean": parameter order in sw(); fixed as (key,title,def,info,inv,after).
+- non-fast-forward in the upload workflow: see section 2.
+- Static false positives: keep.xml wildcards, brace-count regexes on AdBlocker.kt/Media.kt.
+
+## 7. Status
+Done: theme/icons, all settings pages from Soul spec, downloads, Layout editor, Menu editor, Tab settings page (this delivery;
+UNVERIFIED by compile until the user's build).
+Not done / ideas: tab groups and Automatic grouping, tab loop and animation, tab switcher visuals, home-screen start page
+(circular tiles, group folders), Library screens, web cleaner element tools, floating buttons, video manager and player
+gestures, reader/translator extras, Soul-style bottom-sheet menu, userscripts, "Open in new tab" sub-options.

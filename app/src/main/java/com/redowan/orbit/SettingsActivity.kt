@@ -393,7 +393,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun layoutRows(): List<Row> = listOf(
         sw(K.ADDR_BOTTOM, "Address bar at bottom", false, "Moves the address bar and tab bar to the bottom."),
         sw(K.NAV_BAR, "Bottom bar", false, "Back, forward, home, bookmarks, tabs, menu"),
-        sw(K.TAB_BAR, "Show tab bar", true)
+        ch(K.TAB_BAR_MODE, "Show tab bar", listOf("Not used", "Below top bar", "Above top bar"), 1)
     )
 
     private fun menuRows(): List<Row> = listOf(
@@ -409,12 +409,103 @@ class SettingsActivity : AppCompatActivity() {
         ch("tab_add_pos", "Where to add tabs", listOf("Next to the current tab", "End of tab list"), 0) {
             prefs.setBool(K.TAB_NEXT, prefs.int("tab_add_pos") == 0)
         },
-        sw(K.TAB_BAR, "Show tab bar", true),
+        ch(K.TAB_BAR_MODE, "Show tab bar", listOf("Not used", "Below top bar", "Above top bar"), 1),
+        act("Detailed settings", "Colour, outline, buttons, width and height of the tabs",
+            { "${prefs.int(K.TAB_W_PCT)}% x ${prefs.int(K.TAB_H_PCT)}%" }) { tabDetailDialog() },
+        ch(K.TAB_SWIPE_UP, "Swipe up on tab bar", listOf("Not used", "Tab list", "Close tab", "New tab"), 1),
+        ch(K.TAB_SWIPE_DN, "Swipe down on tab bar", listOf("Not used", "Tab list", "Close tab", "New tab"), 2),
+        sw(K.TAB_INDI, "Tab indicator", false, "Shows the current tab position, such as 2/5, on the tab button"),
+        sw(K.TAB_UNDO, "Undelete", true, "Shows an Undo button after a tab is closed"),
         ch(K.TAB_VIEW, "Tab list style", listOf("Grid", "List", "Small list"), 0),
         Gap,
         sw(K.KEYBOARD_ADD, "Activate keyboard when adding tab", false),
-        sw(K.HOME_CLOSE_ALL, "Click on the homepage icon to close all tabs", false)
+        sw(K.HOME_CLOSE_ALL, "Click on the homepage icon to close all tabs", false),
+        Gap,
+        sw(K.LAST_NOTI, "Last page notification", true, "Shows a message when the last page of a tab is reached"),
+        ch(K.BACK_LAST, "Previous button on last page", listOf("Close tab", "Exit app"), 0)
     )
+
+    /** Soul-style "Detailed settings" for the tab bar: outline, colour, add/close buttons, width, height. */
+    private fun tabDetailDialog() {
+        val pad = dp(20)
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(pad, dp(12), pad, 0)
+        }
+        fun label(t: String) = TextView(this).apply { text = t; setPadding(0, dp(12), 0, dp(4)); textSize = 13f }
+        var outline = prefs.bool(K.TAB_OUTLINE)
+        var color = prefs.int(K.TAB_COLOR).coerceIn(0, 7)
+        var addRight = prefs.int(K.TAB_ADD_RIGHT) == 1
+        var closeBtn = prefs.bool(K.TAB_CLOSE_BTN)
+        var wPct = prefs.int(K.TAB_W_PCT)
+        var hPct = prefs.int(K.TAB_H_PCT)
+
+        val swOutline = androidx.appcompat.widget.SwitchCompat(this).apply { text = "Outline"; isChecked = outline; setOnCheckedChangeListener { _, v -> outline = v } }
+        box.addView(swOutline)
+
+        box.addView(label("Colour"))
+        val colors = android.widget.LinearLayout(this)
+        val dots = ArrayList<View>()
+        fun paintDots() = dots.forEachIndexed { i, d ->
+            d.background = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.OVAL
+                setColor(TabStyle.COLORS[i])
+                if (i == color) setStroke(dp(3), if ((resources.configuration.uiMode and 0x30) == 0x20) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
+            }
+        }
+        for (i in 0..7) {
+            val d = View(this)
+            d.layoutParams = android.widget.LinearLayout.LayoutParams(dp(28), dp(28)).apply { setMargins(dp(3), 0, dp(3), 0) }
+            d.setOnClickListener { color = i; paintDots() }
+            dots.add(d); colors.addView(d)
+        }
+        paintDots()
+        box.addView(android.widget.HorizontalScrollView(this).also { it.addView(colors) })
+
+        box.addView(label("Add button"))
+        val rg = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
+        val rl = android.widget.RadioButton(this).apply { text = "Left"; id = 1001 }
+        val rr = android.widget.RadioButton(this).apply { text = "Right"; id = 1002 }
+        rg.addView(rl); rg.addView(rr)
+        rg.check(if (addRight) 1002 else 1001)
+        rg.setOnCheckedChangeListener { _, id -> addRight = id == 1002 }
+        box.addView(rg)
+
+        val swClose = androidx.appcompat.widget.SwitchCompat(this).apply { text = "Close button"; isChecked = closeBtn; setOnCheckedChangeListener { _, v -> closeBtn = v } }
+        box.addView(swClose)
+
+        fun slider(title: String, init: Int, min: Int, max: Int, set: (Int) -> Unit) {
+            val t = label("$title: $init%")
+            val bar = android.widget.SeekBar(this).apply {
+                this.max = max - min; progress = init - min
+                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(s: android.widget.SeekBar?, p: Int, u: Boolean) { set(p + min); t.text = "$title: ${p + min}%" }
+                    override fun onStartTrackingTouch(s: android.widget.SeekBar?) {}
+                    override fun onStopTrackingTouch(s: android.widget.SeekBar?) {}
+                })
+            }
+            box.addView(t); box.addView(bar)
+        }
+        slider("Width", wPct, 40, 130) { wPct = it }
+        slider("Height", hPct, 40, 100) { hPct = it }
+
+        AlertDialog.Builder(this).setTitle("Detailed settings")
+            .setView(android.widget.ScrollView(this).also { it.addView(box) })
+            .setPositiveButton("Apply") { _, _ ->
+                prefs.setBool(K.TAB_OUTLINE, outline); prefs.setInt(K.TAB_COLOR, color)
+                prefs.setInt(K.TAB_ADD_RIGHT, if (addRight) 1 else 0); prefs.setBool(K.TAB_CLOSE_BTN, closeBtn)
+                prefs.setInt(K.TAB_W_PCT, wPct); prefs.setInt(K.TAB_H_PCT, hPct)
+                adapter.notifyDataSetChanged()
+            }
+            .setNeutralButton("Reset") { _, _ ->
+                prefs.setBool(K.TAB_OUTLINE, true); prefs.setInt(K.TAB_COLOR, 4)
+                prefs.setInt(K.TAB_ADD_RIGHT, 1); prefs.setBool(K.TAB_CLOSE_BTN, true)
+                prefs.setInt(K.TAB_W_PCT, 81); prefs.setInt(K.TAB_H_PCT, 73)
+                adapter.notifyDataSetChanged()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 
     private fun compositionRows(): List<Row> = listOf(
         Nav(ic("outline_fullscreen"), "Full screen and Toolbar", "fullscreen"),

@@ -16,6 +16,14 @@ Done so far
 - Layout editor (LayoutActivity + Bars.kt): configurable top/bottom bars, sizes, home columns; MainActivity.rebuildBars().
 - Menu editor (MenuEditorActivity + MenuCat in Bars.kt): configurable popup menu; MainActivity.menuEntry().
 
+- Tab settings page (Soul parity): Where to add tabs, Show tab bar (Not used/Below/Above top bar), Detailed settings dialog
+  (outline, 8 colours, add button side, close button, width %, height %), swipe up/down on tab bar (none/tab list/close/new),
+  tab indicator (pos/total), Undelete (custom Undo bar in MainActivity.showUndoBar; Snackbar is NOT usable: theme is AppCompat),
+  last page notification, previous button on last page (close tab / exit). Keys K.TAB_* in Prefs.kt. Tab item size:
+  TabStyle.widthDp/heightDp (100% = 192dp x 52dp). Layout editor "Tab width" now edits K.TAB_W_PCT.
+  Not implemented on purpose: Automatic grouping (Orbit has no tab groups), Tab loop, tap animation, swipe-from-last-page,
+  Open in new tab sub-options.
+
 Not done (next): tab switcher and Library screens to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 
@@ -24,3 +32,6 @@ supplied by the user, not stored here. Soul's class names are not obfuscated (co
 
 Settings rule: every row must work. Prefs keys live in Prefs.kt (K constants, DEFAULTS map). Any key read outside
 SettingsActivity needs a static default there.
+
+RULE FROM THE USER (every delivery): whenever a new zip is given, update this HANDOFF.md and docs/PROJECT_HISTORY.md first so
+another model can continue. Full chat history and analysis are in docs/PROJECT_HISTORY.md. Read it before doing anything.

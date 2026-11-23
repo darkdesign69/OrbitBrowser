@@ -16,3 +16,5 @@ floating buttons, userscripts, subtitles/video player gestures, in-app purchase,
 
 Soul's launcher icon, logos and name are Soul's trademarks and are NOT copied. The UI icons are Google Material icons
 (Apache 2.0) taken from the APK.
+
+Tab: where to add, show tab bar (3 modes), detailed settings dialog, swipe up/down, tab indicator, undelete, list style, keyboard, home icon closes all, last page notification, previous button on last page. Not done: automatic grouping, tab loop, tap animation, swipe from last page, open-in-new-tab sub-options.

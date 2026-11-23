@@ -20,6 +20,16 @@ private fun ImageView.setTabIcon(t: Tab) {
     }
 }
 
+object TabStyle {
+    val NAMES = listOf("Red", "Orange", "Purple", "Light green", "Dark green", "Lavender", "Blue", "Gray")
+    val COLORS = intArrayOf(
+        0xFFE53935.toInt(), 0xFFFB8C00.toInt(), 0xFF8E24AA.toInt(), 0xFF7CB342.toInt(),
+        0xFF1E8E3E.toInt(), 0xFFB39DDB.toInt(), 0xFF1E88E5.toInt(), 0xFF9E9E9E.toInt()
+    )
+    fun widthDp(p: Prefs) = p.int(K.TAB_W_PCT) * 192 / 100
+    fun heightDp(p: Prefs) = (p.int(K.TAB_H_PCT) * 52 / 100).coerceIn(24, 52)
+}
+
 /** The pill tabs along the top ("tab bar"). */
 class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStripAdapter.VH>() {
 
@@ -34,8 +44,8 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         val p = Prefs(parent.context)
         val d = parent.resources.displayMetrics.density
         v.layoutParams = v.layoutParams.apply {
-            width = (p.int(K.LAY_TAB_W) * d).toInt()
-            height = ((p.int(K.LAY_TAB_H) - 8).coerceAtLeast(26) * d).toInt()
+            width = (TabStyle.widthDp(p) * d).toInt()
+            height = (TabStyle.heightDp(p) * d).toInt()
         }
         return VH(v)
     }
@@ -49,9 +59,19 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         val pf = Prefs(h.itemView.context)
         val dn = h.itemView.resources.displayMetrics.density
         h.itemView.layoutParams = h.itemView.layoutParams.apply {
-            width = (pf.int(K.LAY_TAB_W) * dn).toInt()
-            height = ((pf.int(K.LAY_TAB_H) - 8).coerceAtLeast(26) * dn).toInt()
+            width = (TabStyle.widthDp(pf) * dn).toInt()
+            height = (TabStyle.heightDp(pf) * dn).toInt()
         }
+        val ctx = h.itemView.context
+        h.itemView.background = if (selected) {
+            android.graphics.drawable.GradientDrawable().apply {
+                setColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.pill))
+                cornerRadius = 20 * dn
+                if (pf.bool(K.TAB_OUTLINE))
+                    setStroke((2 * dn).toInt(), TabStyle.COLORS[pf.int(K.TAB_COLOR).coerceIn(0, 7)])
+            }
+        } else androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.bg_tab_off)
+        h.close.visibility = if (pf.bool(K.TAB_CLOSE_BTN)) View.VISIBLE else View.GONE
         h.title.text = t.label()
         h.title.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         h.icon.setTabIcon(t)

@@ -78,7 +78,7 @@ class LayoutActivity : AppCompatActivity() {
         topControls.addView(iconBtn("outline_delete", "Delete all") { clearZone(top, topAdapter) })
         topControls.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         tabToggle = iconBtn("outline_keyboard_arrow_down", "Tab bar") {
-            prefs.setBool(K.TAB_BAR, !prefs.bool(K.TAB_BAR)); refreshToggle()
+            prefs.setInt(K.TAB_BAR_MODE, if (prefs.showTabBar) 0 else 1); refreshToggle()
         }
         tabToggle.background = Ui.roundRect(color(R.color.pill), dp(30).toFloat())
         topControls.addView(tabToggle, LinearLayout.LayoutParams(dp(60), dp(60)))
@@ -138,7 +138,7 @@ class LayoutActivity : AppCompatActivity() {
     }
 
     private fun refreshToggle() {
-        val on = prefs.bool(K.TAB_BAR)
+        val on = prefs.showTabBar
         tabToggle.setImageResource(Bars.icon(this, if (on) "outline_keyboard_arrow_down" else "outline_keyboard_arrow_up"))
         tabToggle.contentDescription = if (on) "Tab bar shown" else "Tab bar hidden"
     }
@@ -225,14 +225,14 @@ class LayoutActivity : AppCompatActivity() {
         slider("Top bar height", K.LAY_TOP_H, 40, 80)
         slider("Icon size", K.LAY_ICON, 32, 56)
         slider("Tab bar height", K.LAY_TAB_H, 34, 64)
-        slider("Tab width", K.LAY_TAB_W, 100, 240)
+        slider("Tab width (%)", K.TAB_W_PCT, 40, 130)
         slider("Bottom bar height", K.LAY_BOT_H, 40, 72)
         slider("Home screen columns", K.LAY_COLS, 3, 6)
         android.widget.ScrollView(this).also { it.addView(box) }.let { sv ->
             AlertDialog.Builder(this).setTitle("Size").setView(sv)
                 .setPositiveButton("OK") { _, _ -> topAdapter.notifyDataSetChanged(); botAdapter.notifyDataSetChanged() }
                 .setNeutralButton("Reset") { _, _ ->
-                    prefs.sp.edit().remove(K.LAY_TOP_H).remove(K.LAY_ICON).remove(K.LAY_TAB_H).remove(K.LAY_TAB_W)
+                    prefs.sp.edit().remove(K.LAY_TOP_H).remove(K.LAY_ICON).remove(K.LAY_TAB_H).remove(K.TAB_W_PCT)
                         .remove(K.LAY_BOT_H).remove(K.LAY_COLS).apply()
                     topAdapter.notifyDataSetChanged(); botAdapter.notifyDataSetChanged()
                 }
@@ -244,7 +244,7 @@ class LayoutActivity : AppCompatActivity() {
         AlertDialog.Builder(this).setTitle("Reset").setMessage("Do you want to reset settings?")
             .setPositiveButton("Reset") { _, _ ->
                 top.clear(); top.addAll(Bars.parse(Bars.DEFAULT_TOP)); bottom.clear()
-                prefs.sp.edit().remove(K.LAY_TOP_H).remove(K.LAY_ICON).remove(K.LAY_TAB_H).remove(K.LAY_TAB_W)
+                prefs.sp.edit().remove(K.LAY_TOP_H).remove(K.LAY_ICON).remove(K.LAY_TAB_H).remove(K.TAB_W_PCT)
                     .remove(K.LAY_BOT_H).remove(K.LAY_COLS).apply()
                 markDirty(); topAdapter.notifyDataSetChanged(); botAdapter.notifyDataSetChanged(); refreshEmpty()
             }

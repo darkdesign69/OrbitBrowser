@@ -79,6 +79,18 @@ object K {
     const val BACK_LAST = "back_last"
     const val SHOW_SCROLLBAR = "show_scrollbar"
     const val HOME_CLOSE_ALL = "home_close_all"
+    const val TAB_BAR_MODE = "tab_bar_mode"      // 0 not used, 1 below top bar, 2 above top bar
+    const val TAB_OUTLINE = "tab_outline"
+    const val TAB_COLOR = "tab_color"            // index into Tabs.COLORS
+    const val TAB_ADD_RIGHT = "tab_add_right"    // 0 left, 1 right
+    const val TAB_CLOSE_BTN = "tab_close_btn"
+    const val TAB_W_PCT = "tab_w_pct"            // 100% = 192dp
+    const val TAB_H_PCT = "tab_h_pct"            // 100% = 52dp
+    const val TAB_SWIPE_UP = "tab_swipe_up"      // 0 none, 1 tab list, 2 close tab, 3 new tab
+    const val TAB_SWIPE_DN = "tab_swipe_dn"
+    const val TAB_INDI = "tab_indi"
+    const val TAB_UNDO = "tab_undo"
+    const val LAST_NOTI = "last_noti"
     const val KEYBOARD_ADD = "keyboard_add"
     const val TAB_OPEN_LIMIT = "tab_open_limit"
     const val DEBUG_WEB = "adv_debug"
@@ -152,7 +164,7 @@ class Prefs(context: Context) {
     // ---- typed shortcuts used on hot paths ----
     val addrBottom get() = bool(K.ADDR_BOTTOM)
     val scrollHide get() = bool(K.SCROLL_HIDE)
-    val showTabBar get() = bool(K.TAB_BAR)
+    val showTabBar get() = int(K.TAB_BAR_MODE) != 0
     val tabNext get() = bool(K.TAB_NEXT)
     val keepTabs get() = bool(K.KEEP_TABS)
     val pullRefresh get() = bool(K.PULL_REFRESH)
@@ -261,6 +273,18 @@ class Prefs(context: Context) {
             K.LAY_BOTTOM to Bars.DEFAULT_BOTTOM,
             K.LAY_TOP_H to 54,
             K.LAY_ICON to 44,
+            K.TAB_BAR_MODE to 1,
+            K.TAB_OUTLINE to true,
+            K.TAB_COLOR to 4,
+            K.TAB_ADD_RIGHT to 1,
+            K.TAB_CLOSE_BTN to true,
+            K.TAB_W_PCT to 81,
+            K.TAB_H_PCT to 73,
+            K.TAB_SWIPE_UP to 1,
+            K.TAB_SWIPE_DN to 2,
+            K.TAB_INDI to false,
+            K.TAB_UNDO to true,
+            K.LAST_NOTI to true,
             K.LAY_TAB_H to 46,
             K.LAY_TAB_W to 156,
             K.LAY_BOT_H to 52,

@@ -192,8 +192,18 @@ class MainActivity : AppCompatActivity() {
                     customView != null -> hideCustomView()
                     findBar.visibility == View.VISIBLE -> closeFind()
                     cur.web?.canGoBack() == true && !cur.home -> cur.web?.goBack()
-                    !cur.home && tabs.size == 1 -> goHome()
-                    tabs.size > 1 -> closeTab(current)
+                    !cur.home && tabs.size == 1 && prefs.int(K.BACK_LAST) == 0 -> {
+                        if (prefs.bool(K.LAST_NOTI)) toast("This is the last page of the tab.")
+                        goHome()
+                    }
+                    !cur.home && prefs.int(K.BACK_LAST) == 1 -> {
+                        if (prefs.bool(K.LAST_NOTI)) toast("This is the last page of the tab.")
+                        finish()
+                    }
+                    tabs.size > 1 -> {
+                        if (!cur.home && prefs.bool(K.LAST_NOTI)) toast("This is the last page of the tab.")
+                        closeTab(current)
+                    }
                     else -> {
                         if (prefs.bool(K.BACK_TWICE)) {
                             val now = SystemClock.elapsedRealtime()
@@ -269,6 +279,7 @@ class MainActivity : AppCompatActivity() {
     private fun bindViews() {
         root = findViewById(R.id.root)
         tabBarRow = findViewById(R.id.tabBarRow)
+        setupTabBarSwipe()
         addrRow = findViewById(R.id.addrRow)
         navRow = findViewById(R.id.navRow)
         tabStrip = findViewById(R.id.tabStrip)
@@ -435,11 +446,47 @@ class MainActivity : AppCompatActivity() {
         (startList.layoutManager as? GridLayoutManager)?.spanCount = prefs.int(K.LAY_COLS).coerceIn(2, 8)
         findViewById<ImageButton>(R.id.btnNewTab).layoutParams =
             findViewById<ImageButton>(R.id.btnNewTab).layoutParams.apply { width = dp(prefs.int(K.LAY_TAB_H)); height = dp(prefs.int(K.LAY_TAB_H)) }
+        val addBtn = findViewById<ImageButton>(R.id.btnNewTab)
+        (tabBarRow as LinearLayout).let { r ->
+            r.removeView(addBtn)
+            r.addView(addBtn, if (prefs.int(K.TAB_ADD_RIGHT) == 1) r.childCount else 0)
+        }
         tabCountSync()
         stripAdapter.notifyDataSetChanged()
     }
 
-    private fun tabCountSync() { countViews.forEach { it.text = tabs.size.toString() } }
+    private fun countText() =
+        if (prefs.bool(K.TAB_INDI)) "${(current + 1).coerceAtLeast(1)}/${tabs.size}" else tabs.size.toString()
+
+    private fun tabCountSync() { val s = countText(); countViews.forEach { it.text = s } }
+
+    /** Swipe up / down on the tab bar runs the action chosen in Settings > Tab. */
+    private fun tabBarAction(code: Int) {
+        when (code) {
+            1 -> TabSwitcher(this).show()
+            2 -> closeTab(current)
+            3 -> newTab(null)
+        }
+    }
+
+    private fun setupTabBarSwipe() {
+        val gd = android.view.GestureDetector(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: android.view.MotionEvent) = true
+            override fun onFling(e1: android.view.MotionEvent?, e2: android.view.MotionEvent, vx: Float, vy: Float): Boolean {
+                val dy = e2.y - (e1?.y ?: e2.y)
+                val dx = e2.x - (e1?.x ?: e2.x)
+                if (Math.abs(dy) < dp(24) || Math.abs(dy) < Math.abs(dx)) return false
+                tabBarAction(prefs.int(if (dy < 0) K.TAB_SWIPE_UP else K.TAB_SWIPE_DN))
+                return true
+            }
+        })
+        tabStrip.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: android.view.MotionEvent): Boolean {
+                gd.onTouchEvent(e); return false
+            }
+        })
+        tabBarRow.setOnTouchListener { _, e -> gd.onTouchEvent(e) }
+    }
 
     /** Re-applies settings that change layout or behaviour. Called on resume (after Settings). */
     private fun applyPrefs() {
@@ -454,8 +501,8 @@ class MainActivity : AppCompatActivity() {
             root.addView(tabBarRow, i)
             root.addView(addrRow, i + 1)
         } else {
-            root.addView(addrRow, 0)
-            root.addView(tabBarRow, 1)
+            if (prefs.int(K.TAB_BAR_MODE) == 2) { root.addView(tabBarRow, 0); root.addView(addrRow, 1) }
+            else { root.addView(addrRow, 0); root.addView(tabBarRow, 1) }
         }
         rebuildBars()
         if (!prefs.scrollHide) showBars()
@@ -561,12 +608,45 @@ class MainActivity : AppCompatActivity() {
     fun closeTab(p: Int) {
         if (p !in tabs.indices) return
         val t = tabs.removeAt(p)
+        val undoUrl = if (!t.home) t.url else null
+        val undoInc = t.incognito
         destroyTab(t)
         if (tabs.isEmpty()) {
             tabs.add(Tab(null)); current = 0
         } else if (p < current) current--
         else if (p == current) current = p.coerceAtMost(tabs.size - 1)
         showTab()
+        if (prefs.bool(K.TAB_UNDO) && !undoInc && !undoUrl.isNullOrEmpty()) {
+            showUndoBar {
+                val nt = Tab(undoUrl, false)
+                val at = p.coerceAtMost(tabs.size)
+                tabs.add(at, nt); current = at
+                navigate(nt, undoUrl)
+            }
+        }
+    }
+
+    /** Small "Tab closed - Undo" bar (no Material theme needed). */
+    private fun showUndoBar(undo: () -> Unit) {
+        val deco = window.decorView as ViewGroup
+        deco.findViewWithTag<View>("orbit_undo")?.let { deco.removeView(it) }
+        val bar = LinearLayout(this).apply {
+            tag = "orbit_undo"
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(4), dp(8), dp(4))
+            background = android.graphics.drawable.GradientDrawable().apply { setColor(0xEE323232.toInt()); cornerRadius = dp(8).toFloat() }
+        }
+        bar.addView(TextView(this).apply { text = "Tab closed"; setTextColor(0xFFFFFFFF.toInt()); textSize = 14f },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        bar.addView(TextView(this).apply {
+            text = "UNDO"; setTextColor(0xFF8AB4F8.toInt()); textSize = 14f; setPadding(dp(16), dp(12), dp(12), dp(12))
+            setOnClickListener { deco.removeView(bar); undo() }
+        })
+        val lp = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM)
+        lp.setMargins(dp(12), 0, dp(12), dp(72))
+        deco.addView(bar, lp)
+        bar.postDelayed({ if (bar.parent != null) deco.removeView(bar) }, 5000)
     }
 
     fun closeWhere(pred: (Tab) -> Boolean) {
@@ -606,7 +686,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshTabs() {
         stripAdapter.notifyDataSetChanged()
-        countViews.forEach { it.text = tabs.size.toString() }
+        tabCountSync()
         if (current in tabs.indices) tabStrip.scrollToPosition(current)
     }
 

@@ -24,6 +24,17 @@ Done so far
   Not implemented on purpose: Automatic grouping (Orbit has no tab groups), Tab loop, tap animation, swipe-from-last-page,
   Open in new tab sub-options.
 
+Delivery 12 (UNVERIFIED by compile, from the user's screenshots of Soul vs Orbit):
+- Tab > Detailed settings (SettingsActivity.tabDetailDialog): pinned LIVE PREVIEW (custom dialog title) redrawn on every change
+  (outline, colour, add button side, close button, width, height) via the shared TabStyle.style() used by the real tab bar too;
+  -/+ steppers, ranges 50-200% (read from Soul's slider positions), Reset resets inside the dialog, Apply saves.
+- Tab size now measured from Soul (411dp screen): 100% = 142dp x 30dp (81% x 73% = 115 x 22dp). Tab bar row height =
+  max(LAY_TAB_H, tab height + 8dp).
+- Top bar smaller like Soul: row 44dp, icons 40dp, address pill 32dp (= row - 12), reload button follows pill, tab count box 26x22dp,
+  tab bar row 34dp. Only defaults changed (Prefs.kt); values already saved by the Layout editor are kept, Layout > Size > Reset applies them.
+- Three-dot menu (MainActivity.showPopupMenu): top quick row and bottom row (icon only) are FIXED, only the list scrolls
+  (CappedColumn + ScrollView weight 1); 62% wide; opens 24dp below the toolbar top, positioned from addrRow screen coordinates
+  (old version used lp.y on a floating dialog and landed too low); rows 50dp, text 15sp.
 Not done (next): tab switcher and Library screens to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 

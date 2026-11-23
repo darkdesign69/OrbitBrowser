@@ -222,10 +222,10 @@ class LayoutActivity : AppCompatActivity() {
             label.text = "$title: ${prefs.int(key)}"
             box.addView(label); box.addView(bar)
         }
-        slider("Top bar height", K.LAY_TOP_H, 40, 80)
-        slider("Icon size", K.LAY_ICON, 32, 56)
-        slider("Tab bar height", K.LAY_TAB_H, 34, 64)
-        slider("Tab width (%)", K.TAB_W_PCT, 40, 130)
+        slider("Top bar height", K.LAY_TOP_H, 34, 80)
+        slider("Icon size", K.LAY_ICON, 28, 56)
+        slider("Tab bar height", K.LAY_TAB_H, 26, 64)
+        slider("Tab width (%)", K.TAB_W_PCT, 50, 200)
         slider("Bottom bar height", K.LAY_BOT_H, 40, 72)
         slider("Home screen columns", K.LAY_COLS, 3, 6)
         android.widget.ScrollView(this).also { it.addView(box) }.let { sv ->

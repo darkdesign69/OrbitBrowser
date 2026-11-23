@@ -24,6 +24,11 @@
 4. Asked how another Claude account could continue if the limit hits -> HANDOFF.md created.
 5. Sent 8 screenshots comparing Soul's Tab settings with Orbit's -> Tab page parity work (this delivery).
 6. Asked that every delivery updates the handoff with all analysis and chat data -> this file.
+7. Delivery 12: user (screenshots of Soul and Orbit side by side) reported: no live preview when changing tab width/height in
+   Detailed settings; top bar (address bar + icons) much bigger than Soul's; Soul's 3-dot menu keeps its top quick-button row
+   and bottom icon row fixed while the list scrolls (Orbit scrolled everything), and Orbit's menu sat lower and was bigger.
+   Fixed as described in HANDOFF.md "Delivery 12". Measurements: Soul pill ~87px = 33dp at 2.625 density, tab 58px x 302px,
+   menu 62% of screen width, row ~54dp, top row starts ~24dp below toolbar top and bottom row is icon only.
 
 ## 4. Reverse-engineering method (no apktool available)
 - Python decoders in tools/soul/: axml (binary XML), resources.arsc, DEX reader, page scanner (decode_all.py, pages.py).

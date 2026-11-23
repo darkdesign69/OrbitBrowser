@@ -397,11 +397,11 @@ class MainActivity : AppCompatActivity() {
                 setBackgroundResource(tv.resourceId)
                 contentDescription = "Tabs"
                 val c = TextView(this@MainActivity).apply {
-                    layoutParams = FrameLayout.LayoutParams(dp(28), dp(26), Gravity.CENTER)
+                    layoutParams = FrameLayout.LayoutParams(dp(26), dp(22), Gravity.CENTER)
                     setBackgroundResource(R.drawable.bg_tabcount)
                     gravity = Gravity.CENTER
                     setTextColor(color(R.color.icon))
-                    textSize = 12f
+                    textSize = 11f
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     text = tabs.size.toString()
                 }
@@ -421,9 +421,11 @@ class MainActivity : AppCompatActivity() {
                 if (addressDone || bottom) continue
                 addressDone = true
                 (urlPill.parent as? ViewGroup)?.removeView(urlPill)
-                urlPill.layoutParams = LinearLayout.LayoutParams(0, dp(prefs.int(K.LAY_TOP_H) - 12).coerceAtLeast(dp(30)), 1f).apply {
+                val pillH = (prefs.int(K.LAY_TOP_H) - 12).coerceAtLeast(26)
+                urlPill.layoutParams = LinearLayout.LayoutParams(0, dp(pillH), 1f).apply {
                     marginStart = dp(4); marginEnd = dp(4)
                 }
+                btnReload.layoutParams = btnReload.layoutParams.apply { width = dp(pillH - 2); height = dp(pillH - 2) }
                 row.addView(urlPill)
             } else barItem(id, bottom)?.let { row.addView(it) }
         }
@@ -440,12 +442,14 @@ class MainActivity : AppCompatActivity() {
         else (urlPill.parent as? ViewGroup)?.removeView(urlPill)
         addrRow.layoutParams = addrRow.layoutParams.apply { height = dp(prefs.int(K.LAY_TOP_H)) }
         addrRow.visibility = if (top.isEmpty()) View.GONE else View.VISIBLE
-        tabBarRow.layoutParams = tabBarRow.layoutParams.apply { height = dp(prefs.int(K.LAY_TAB_H)) }
+        // the row is never shorter than the tabs themselves (Settings > Tab > Detailed settings > Height)
+        val tabRowH = maxOf(prefs.int(K.LAY_TAB_H), TabStyle.heightDp(prefs) + 8)
+        tabBarRow.layoutParams = tabBarRow.layoutParams.apply { height = dp(tabRowH) }
         navRow.layoutParams = navRow.layoutParams.apply { height = dp(prefs.int(K.LAY_BOT_H)) }
         navRow.visibility = if (bottom.isEmpty()) View.GONE else View.VISIBLE
         (startList.layoutManager as? GridLayoutManager)?.spanCount = prefs.int(K.LAY_COLS).coerceIn(2, 8)
         findViewById<ImageButton>(R.id.btnNewTab).layoutParams =
-            findViewById<ImageButton>(R.id.btnNewTab).layoutParams.apply { width = dp(prefs.int(K.LAY_TAB_H)); height = dp(prefs.int(K.LAY_TAB_H)) }
+            findViewById<ImageButton>(R.id.btnNewTab).layoutParams.apply { width = dp(tabRowH); height = dp(tabRowH) }
         val addBtn = findViewById<ImageButton>(R.id.btnNewTab)
         (tabBarRow as LinearLayout).let { r ->
             r.removeView(addBtn)
@@ -1545,6 +1549,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Column that is never taller than [maxH]: the weighted list inside shrinks and scrolls, the other rows stay. */
+    private class CappedColumn(ctx: Context) : LinearLayout(ctx) {
+        var maxH = Int.MAX_VALUE
+        override fun onMeasure(w: Int, h: Int) {
+            val cap = minOf(View.MeasureSpec.getSize(h), maxH)
+            super.onMeasure(w, View.MeasureSpec.makeMeasureSpec(cap, View.MeasureSpec.AT_MOST))
+        }
+    }
+
+    /**
+     * Soul-style popup. Like Soul the quick buttons (top) and Incognito / Desktop / DNS (bottom) are FIXED; only the list
+     * between them scrolls. It opens about 24dp below the top of the toolbar, 62% wide, icon-only bottom row.
+     */
     private fun showPopupMenu() {
         val d = AppCompatDialog(this, R.style.PopupDialog)
         val inf = LayoutInflater.from(this)
@@ -1554,15 +1571,16 @@ class MainActivity : AppCompatActivity() {
         theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, tv, true)
         val rippleRes = tv.resourceId
 
-        val root = LinearLayout(this).apply {
+        // ---- scrolling list in the middle
+        val list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(4), dp(4), dp(4), dp(12))
+            setPadding(0, 0, 0, dp(4))
         }
         fun newCard(): LinearLayout {
             val c = LinearLayout(this)
             c.orientation = LinearLayout.VERTICAL
             c.setBackgroundResource(R.drawable.bg_c_single)
-            root.addView(c, LinearLayout.LayoutParams(matchW, wrapH).apply { topMargin = dp(8) })
+            list.addView(c, LinearLayout.LayoutParams(matchW, wrapH).apply { topMargin = dp(8) })
             return c
         }
         fun row(card: LinearLayout, icon: Int, label: String, act: () -> Unit) {
@@ -1572,22 +1590,6 @@ class MainActivity : AppCompatActivity() {
             v.setOnClickListener { d.dismiss(); act() }
             card.addView(v)
         }
-
-        // quick buttons
-        val top = newCard()
-        top.orientation = LinearLayout.HORIZONTAL
-        fun quick(e: ME) {
-            val b = ImageButton(this)
-            b.setImageResource(e.icon)
-            b.setBackgroundResource(rippleRes)
-            b.contentDescription = e.label
-            b.alpha = if (e.dim) 0.4f else 1f
-            b.setOnClickListener { d.dismiss(); e.act() }
-            top.addView(b, LinearLayout.LayoutParams(0, dp(54), 1f))
-        }
-        MenuCat.parse(prefs.str(K.MENU_QUICK)).forEach { id -> menuEntry(id)?.let { quick(it) } }
-        if (top.childCount == 0) root.removeView(top)
-
         var card: LinearLayout? = null
         for (id in MenuCat.parse(prefs.str(K.MENU_LIST))) {
             if (id == "sep") { card = null; continue }
@@ -1595,34 +1597,79 @@ class MainActivity : AppCompatActivity() {
             if (card == null) card = newCard()
             row(card, e.icon, e.label, e.act)
         }
-
-        // bottom row
-        val bottom = newCard()
-        bottom.orientation = LinearLayout.HORIZONTAL
-        fun bItem(e: ME) {
-            val v = inf.inflate(R.layout.item_menu, bottom, false)
-            v.findViewById<ImageView>(R.id.menuIcon).setImageResource(e.icon)
-            v.findViewById<TextView>(R.id.menuLabel).text = e.label
-            v.setOnClickListener { d.dismiss(); e.act() }
-            bottom.addView(v)
+        val scroll = ScrollView(this).apply {
+            isVerticalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(list)
         }
-        MenuCat.parse(prefs.str(K.MENU_BOTTOM)).forEach { id -> menuEntry(id)?.let { bItem(it) } }
-        if (bottom.childCount == 0) root.removeView(bottom)
 
-        val scroll = ScrollView(this)
-        scroll.addView(root)
-        scroll.setOnClickListener { d.dismiss() }
-        d.setContentView(scroll)
+        // ---- fixed top row (quick buttons)
+        fun fixedBar(top: Boolean) = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(color(R.color.bg))
+                val r = dp(24).toFloat()
+                cornerRadii = if (top) floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f) else floatArrayOf(0f, 0f, 0f, 0f, r, r, r, r)
+            }
+        }
+        val topBar = fixedBar(true)
+        MenuCat.parse(prefs.str(K.MENU_QUICK)).forEach { id ->
+            val e = menuEntry(id) ?: return@forEach
+            val b = ImageButton(this)
+            b.setImageResource(e.icon)
+            b.setBackgroundResource(rippleRes)
+            b.contentDescription = e.label
+            b.alpha = if (e.dim) 0.4f else 1f
+            b.setOnClickListener { d.dismiss(); e.act() }
+            topBar.addView(b, LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
+
+        // ---- fixed bottom row (icons only, like Soul)
+        val bottomBar = fixedBar(false)
+        MenuCat.parse(prefs.str(K.MENU_BOTTOM)).forEach { id ->
+            val e = menuEntry(id) ?: return@forEach
+            val b = ImageButton(this)
+            b.setImageResource(e.icon)
+            b.setBackgroundResource(rippleRes)
+            b.contentDescription = e.label
+            b.setOnClickListener { d.dismiss(); e.act() }
+            bottomBar.addView(b, LinearLayout.LayoutParams(0, dp(52), 1f))
+        }
+
+        val panel = CappedColumn(this).apply {
+            orientation = LinearLayout.VERTICAL
+            isClickable = true                       // taps on the panel must not reach the dismiss layer
+            visibility = View.INVISIBLE              // shown after it has been positioned
+        }
+        if (topBar.childCount > 0) {
+            panel.addView(topBar, LinearLayout.LayoutParams(matchW, wrapH))
+            panel.addView(View(this).apply { setBackgroundColor(color(R.color.divider)) }, LinearLayout.LayoutParams(matchW, dp(1)))
+        }
+        panel.addView(scroll, LinearLayout.LayoutParams(matchW, 0, 1f))
+        if (bottomBar.childCount > 0) panel.addView(bottomBar, LinearLayout.LayoutParams(matchW, wrapH).apply { topMargin = dp(4) })
+
+        val frame = android.widget.FrameLayout(this)
+        frame.setOnClickListener { d.dismiss() }
+        val dm = resources.displayMetrics
+        frame.addView(panel, android.widget.FrameLayout.LayoutParams((dm.widthPixels * 0.62f).toInt(), wrapH,
+            Gravity.TOP or Gravity.END).apply { rightMargin = dp(2) })
+        d.setContentView(frame, ViewGroup.LayoutParams(matchW, ViewGroup.LayoutParams.MATCH_PARENT))
         d.window?.let { w ->
-            val dm = resources.displayMetrics
-            w.setLayout((dm.widthPixels * 0.68f).toInt(), (dm.heightPixels * 0.86f).toInt())
-            w.setGravity(Gravity.TOP or Gravity.END)
-            val lp = w.attributes
-            lp.y = dp(52)
-            lp.x = dp(4)
-            w.attributes = lp
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            w.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+            w.setGravity(Gravity.TOP)
         }
         d.show()
+        frame.post {
+            // measured in screen coordinates, so it does not matter where the dialog window starts
+            val bar = IntArray(2); addrRow.getLocationOnScreen(bar)
+            val own = IntArray(2); frame.getLocationOnScreen(own)
+            val topMargin = (bar[1] - own[1]).coerceAtLeast(0) + dp(24)
+            panel.maxH = (frame.height - topMargin - dp(4)).coerceAtLeast(dp(120))
+            (panel.layoutParams as android.widget.FrameLayout.LayoutParams).topMargin = topMargin
+            panel.requestLayout()
+            panel.visibility = View.VISIBLE
+        }
     }
 
     private fun showGridMenu() {

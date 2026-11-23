@@ -425,71 +425,152 @@ class SettingsActivity : AppCompatActivity() {
         ch(K.BACK_LAST, "Previous button on last page", listOf("Close tab", "Exit app"), 0)
     )
 
-    /** Soul-style "Detailed settings" for the tab bar: outline, colour, add/close buttons, width, height. */
+    /**
+     * Soul-style "Detailed settings" for the tab bar. A live preview strip is pinned on top and is redrawn on every
+     * change (outline, colour, add button side, close button, width, height); nothing is saved until Apply.
+     */
     private fun tabDetailDialog() {
-        val pad = dp(20)
-        val box = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(pad, dp(12), pad, 0)
-        }
-        fun label(t: String) = TextView(this).apply { text = t; setPadding(0, dp(12), 0, dp(4)); textSize = 13f }
         var outline = prefs.bool(K.TAB_OUTLINE)
         var color = prefs.int(K.TAB_COLOR).coerceIn(0, 7)
         var addRight = prefs.int(K.TAB_ADD_RIGHT) == 1
         var closeBtn = prefs.bool(K.TAB_CLOSE_BTN)
-        var wPct = prefs.int(K.TAB_W_PCT)
-        var hPct = prefs.int(K.TAB_H_PCT)
+        var wPct = prefs.int(K.TAB_W_PCT).coerceIn(50, 200)
+        var hPct = prefs.int(K.TAB_H_PCT).coerceIn(50, 200)
+        val syncs = ArrayList<() -> Unit>()          // re-read the vars into the controls (used by Reset)
 
-        val swOutline = androidx.appcompat.widget.SwitchCompat(this).apply { text = "Outline"; isChecked = outline; setOnCheckedChangeListener { _, v -> outline = v } }
+        // ---- live preview (custom title = stays visible while the controls scroll)
+        val previewTabs = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val previewPlus = ImageView(this).apply {
+            setImageResource(R.drawable.ic_add)
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+        }
+        val preview = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setBackgroundColor(color(R.color.bg))
+            setPadding(dp(8), 0, dp(4), 0)
+        }
+        fun refreshPreview() {
+            previewTabs.removeAllViews()
+            val names = listOf("Home", "Tab", "Tab")
+            for (i in names.indices) {
+                val v = LayoutInflater.from(this).inflate(R.layout.item_tab_strip, previewTabs, false)
+                v.findViewById<TextView>(R.id.tabTitle).text = names[i]
+                v.findViewById<TextView>(R.id.tabTitle).setTypeface(null, if (i == 0) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                v.findViewById<ImageView>(R.id.tabIcon).setImageResource(R.drawable.ic_home)
+                TabStyle.style(v, i == 0, outline, color, closeBtn, wPct, hPct)
+                previewTabs.addView(v)
+            }
+            preview.removeAllViews()
+            val tabsLp = android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            val plusLp = android.widget.LinearLayout.LayoutParams(dp(40), dp(40))
+            if (addRight) { preview.addView(previewTabs, tabsLp); preview.addView(previewPlus, plusLp) }
+            else { preview.addView(previewPlus, plusLp); preview.addView(previewTabs, tabsLp) }
+        }
+        // fixed height (tallest possible tab + margin) so the dialog does not jump while sliding
+        val previewFrame = android.widget.FrameLayout(this).apply {
+            minimumHeight = dp(TabStyle.heightDp(200) + 16)
+            addView(preview, android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(TabStyle.heightDp(200) + 16)))
+        }
+
+        // ---- controls
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
+        fun label(t: String) = TextView(this).apply {
+            text = t; setPadding(0, dp(12), 0, dp(4)); textSize = 13f; setTextColor(color(R.color.text_sub))
+        }
+
+        val swOutline = SwitchCompat(this).apply {
+            text = "Outline"; isChecked = outline
+            setOnCheckedChangeListener { _, v -> outline = v; refreshPreview() }
+        }
         box.addView(swOutline)
+        syncs.add { swOutline.isChecked = outline }
 
         box.addView(label("Colour"))
         val colors = android.widget.LinearLayout(this)
         val dots = ArrayList<View>()
         fun paintDots() = dots.forEachIndexed { i, d ->
-            d.background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
+            d.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
                 setColor(TabStyle.COLORS[i])
                 if (i == color) setStroke(dp(3), if ((resources.configuration.uiMode and 0x30) == 0x20) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
             }
         }
         for (i in 0..7) {
             val d = View(this)
-            d.layoutParams = android.widget.LinearLayout.LayoutParams(dp(28), dp(28)).apply { setMargins(dp(3), 0, dp(3), 0) }
-            d.setOnClickListener { color = i; paintDots() }
+            d.layoutParams = android.widget.LinearLayout.LayoutParams(dp(30), dp(30)).apply { setMargins(dp(3), 0, dp(3), 0) }
+            d.contentDescription = TabStyle.NAMES[i]
+            d.setOnClickListener { color = i; paintDots(); refreshPreview() }
             dots.add(d); colors.addView(d)
         }
         paintDots()
+        syncs.add { paintDots() }
         box.addView(android.widget.HorizontalScrollView(this).also { it.addView(colors) })
 
         box.addView(label("Add button"))
         val rg = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
-        val rl = android.widget.RadioButton(this).apply { text = "Left"; id = 1001 }
-        val rr = android.widget.RadioButton(this).apply { text = "Right"; id = 1002 }
-        rg.addView(rl); rg.addView(rr)
+        rg.addView(android.widget.RadioButton(this).apply { text = "Left"; id = 1001 })
+        rg.addView(android.widget.RadioButton(this).apply { text = "Right"; id = 1002 })
         rg.check(if (addRight) 1002 else 1001)
-        rg.setOnCheckedChangeListener { _, id -> addRight = id == 1002 }
+        rg.setOnCheckedChangeListener { _, id -> addRight = id == 1002; refreshPreview() }
         box.addView(rg)
+        syncs.add { rg.check(if (addRight) 1002 else 1001) }
 
-        val swClose = androidx.appcompat.widget.SwitchCompat(this).apply { text = "Close button"; isChecked = closeBtn; setOnCheckedChangeListener { _, v -> closeBtn = v } }
-        box.addView(swClose)
-
-        fun slider(title: String, init: Int, min: Int, max: Int, set: (Int) -> Unit) {
-            val t = label("$title: $init%")
-            val bar = android.widget.SeekBar(this).apply {
-                this.max = max - min; progress = init - min
-                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(s: android.widget.SeekBar?, p: Int, u: Boolean) { set(p + min); t.text = "$title: ${p + min}%" }
-                    override fun onStartTrackingTouch(s: android.widget.SeekBar?) {}
-                    override fun onStopTrackingTouch(s: android.widget.SeekBar?) {}
-                })
-            }
-            box.addView(t); box.addView(bar)
+        val swClose = SwitchCompat(this).apply {
+            text = "Close button"; isChecked = closeBtn
+            setOnCheckedChangeListener { _, v -> closeBtn = v; refreshPreview() }
         }
-        slider("Width", wPct, 40, 130) { wPct = it }
-        slider("Height", hPct, 40, 100) { hPct = it }
+        box.addView(swClose)
+        syncs.add { swClose.isChecked = closeBtn }
 
-        AlertDialog.Builder(this).setTitle("Detailed settings")
+        /** Title + value, then  [-] ---o--- [+]. Soul's range is 50% to 200%. */
+        fun slider(title: String, get: () -> Int, set: (Int) -> Unit) {
+            val min = 50; val max = 200
+            val value = TextView(this).apply { textSize = 15f; setTextColor(color(R.color.text_sub)) }
+            val head = android.widget.LinearLayout(this).apply {
+                setPadding(0, dp(12), 0, 0)
+                addView(TextView(this@SettingsActivity).apply { text = title; textSize = 15f; setTextColor(color(R.color.text)) },
+                    android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                addView(value)
+            }
+            val bar = android.widget.SeekBar(this).apply { this.max = max - min }
+            fun commit(v: Int) {
+                val c = v.coerceIn(min, max)
+                set(c); value.text = "$c%"
+                if (bar.progress != c - min) bar.progress = c - min
+                refreshPreview()
+            }
+            bar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: android.widget.SeekBar?, p: Int, u: Boolean) { if (u) commit(p + min) }
+                override fun onStartTrackingTouch(s: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(s: android.widget.SeekBar?) {}
+            })
+            fun step(txt: String, d: Int) = TextView(this).apply {
+                text = txt; textSize = 24f; gravity = android.view.Gravity.CENTER
+                setTextColor(color(R.color.text))
+                setBackgroundResource(android.R.drawable.list_selector_background)
+                setOnClickListener { commit(get() + d) }
+            }
+            val row = android.widget.LinearLayout(this).apply { gravity = android.view.Gravity.CENTER_VERTICAL }
+            row.addView(step("\u2212", -1), android.widget.LinearLayout.LayoutParams(dp(40), dp(40)))
+            row.addView(bar, android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(step("+", 1), android.widget.LinearLayout.LayoutParams(dp(40), dp(40)))
+            box.addView(head); box.addView(row)
+            value.text = "${get()}%"; bar.progress = get() - min
+            syncs.add { value.text = "${get()}%"; bar.progress = get() - min }
+        }
+        slider("Width", { wPct }) { wPct = it }
+        slider("Height", { hPct }) { hPct = it }
+
+        refreshPreview()
+        val dlg = AlertDialog.Builder(this)
+            .setCustomTitle(previewFrame)
             .setView(android.widget.ScrollView(this).also { it.addView(box) })
             .setPositiveButton("Apply") { _, _ ->
                 prefs.setBool(K.TAB_OUTLINE, outline); prefs.setInt(K.TAB_COLOR, color)
@@ -497,14 +578,18 @@ class SettingsActivity : AppCompatActivity() {
                 prefs.setInt(K.TAB_W_PCT, wPct); prefs.setInt(K.TAB_H_PCT, hPct)
                 adapter.notifyDataSetChanged()
             }
-            .setNeutralButton("Reset") { _, _ ->
-                prefs.setBool(K.TAB_OUTLINE, true); prefs.setInt(K.TAB_COLOR, 4)
-                prefs.setInt(K.TAB_ADD_RIGHT, 1); prefs.setBool(K.TAB_CLOSE_BTN, true)
-                prefs.setInt(K.TAB_W_PCT, 81); prefs.setInt(K.TAB_H_PCT, 73)
-                adapter.notifyDataSetChanged()
-            }
+            .setNeutralButton("Reset", null)
             .setNegativeButton("Cancel", null)
-            .show()
+            .create()
+        dlg.setOnShowListener {
+            // Reset restores Soul's defaults inside the dialog (and the preview) without closing it
+            dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                outline = true; color = 4; addRight = true; closeBtn = true; wPct = 81; hPct = 73
+                syncs.forEach { it() }
+                refreshPreview()
+            }
+        }
+        dlg.show()
     }
 
     private fun compositionRows(): List<Row> = listOf(

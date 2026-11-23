@@ -10,7 +10,7 @@
     <LinearLayout
         android:id="@+id/addrRow"
         android:layout_width="match_parent"
-        android:layout_height="54dp"
+        android:layout_height="44dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="6dp"
@@ -18,8 +18,8 @@
 
         <ImageButton
             android:id="@+id/topHome"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Home"
             android:src="@drawable/ic_home" />
@@ -27,15 +27,15 @@
         <LinearLayout
             android:id="@+id/urlPill"
             android:layout_width="0dp"
-            android:layout_height="42dp"
+            android:layout_height="32dp"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:background="@drawable/bg_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="14dp"
-            android:paddingEnd="4dp">
+            android:paddingStart="12dp"
+            android:paddingEnd="2dp">
 
             <ImageView
                 android:id="@+id/lockIcon"
@@ -62,12 +62,12 @@
                 android:selectAllOnFocus="true"
                 android:textColor="@color/text"
                 android:textColorHint="@color/text_sub"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <ImageButton
                 android:id="@+id/btnReload"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Reload"
                 android:src="@drawable/ic_refresh" />
@@ -75,15 +75,15 @@
 
         <FrameLayout
             android:id="@+id/topTabs"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Tabs">
 
             <TextView
                 android:id="@+id/topTabCount"
-                android:layout_width="28dp"
-                android:layout_height="26dp"
+                android:layout_width="26dp"
+                android:layout_height="22dp"
                 android:layout_gravity="center"
                 android:background="@drawable/bg_tabcount"
                 android:gravity="center"
@@ -95,8 +95,8 @@
 
         <ImageButton
             android:id="@+id/topMenu"
-            android:layout_width="40dp"
-            android:layout_height="44dp"
+            android:layout_width="36dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="Menu"
             android:src="@drawable/ic_more" />
@@ -106,7 +106,7 @@
     <LinearLayout
         android:id="@+id/tabBarRow"
         android:layout_width="match_parent"
-        android:layout_height="46dp"
+        android:layout_height="34dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -121,8 +121,8 @@
 
         <ImageButton
             android:id="@+id/btnNewTab"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="New tab"
             android:src="@drawable/ic_add" />

@@ -26,8 +26,48 @@ object TabStyle {
         0xFFE53935.toInt(), 0xFFFB8C00.toInt(), 0xFF8E24AA.toInt(), 0xFF7CB342.toInt(),
         0xFF1E8E3E.toInt(), 0xFFB39DDB.toInt(), 0xFF1E88E5.toInt(), 0xFF9E9E9E.toInt()
     )
-    fun widthDp(p: Prefs) = p.int(K.TAB_W_PCT) * 192 / 100
-    fun heightDp(p: Prefs) = (p.int(K.TAB_H_PCT) * 52 / 100).coerceIn(24, 52)
+    /** Soul 1.4.86 measured on a 411dp screen: 81% x 73% is about 115dp x 22dp, so 100% is 142dp x 30dp. */
+    fun widthDp(pct: Int) = pct * 142 / 100
+    fun heightDp(pct: Int) = (pct * 30 / 100).coerceIn(20, 64)
+    fun widthDp(p: Prefs) = widthDp(p.int(K.TAB_W_PCT))
+    fun heightDp(p: Prefs) = heightDp(p.int(K.TAB_H_PCT))
+
+    /**
+     * Paints one pill tab (item_tab_strip). The real tab bar and the live preview in
+     * Settings > Tab > Detailed settings both call this, so they always look the same.
+     */
+    fun style(v: View, selected: Boolean, outline: Boolean, color: Int, closeBtn: Boolean, wPct: Int, hPct: Int) {
+        val ctx = v.context
+        val d = ctx.resources.displayMetrics.density
+        val h = heightDp(hPct)
+        val hPx = (h * d).toInt()
+        v.layoutParams?.let { lp ->
+            lp.width = (widthDp(wPct) * d).toInt()
+            lp.height = hPx
+            v.layoutParams = lp
+        }
+        v.isSelected = selected
+        v.background = if (selected) {
+            android.graphics.drawable.GradientDrawable().apply {
+                setColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.pill))
+                cornerRadius = hPx / 2f
+                if (outline) setStroke((2 * d).toInt(), COLORS[color.coerceIn(0, 7)])
+            }
+        } else androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.bg_tab_off)
+        v.setPadding((((h / 4).coerceIn(5, 10)) * d).toInt(), 0, (2 * d).toInt(), 0)
+        v.findViewById<ImageView>(R.id.tabIcon)?.let { ic ->
+            val s = ((h * 0.62f).coerceIn(12f, 18f) * d).toInt()
+            ic.layoutParams = ic.layoutParams.apply { width = s; height = s }
+        }
+        v.findViewById<TextView>(R.id.tabTitle)?.textSize = if (h < 26) 11f else 13f
+        v.findViewById<ImageButton>(R.id.tabClose)?.let { c ->
+            c.visibility = if (closeBtn) View.VISIBLE else View.GONE
+            val s = ((h - 2).coerceIn(16, 30) * d).toInt()
+            c.layoutParams = c.layoutParams.apply { width = s; height = s }
+            val pd = (s * 0.25f).toInt()
+            c.setPadding(pd, pd, pd, pd)
+        }
+    }
 }
 
 /** The pill tabs along the top ("tab bar"). */
@@ -41,12 +81,6 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.item_tab_strip, parent, false)
-        val p = Prefs(parent.context)
-        val d = parent.resources.displayMetrics.density
-        v.layoutParams = v.layoutParams.apply {
-            width = (TabStyle.widthDp(p) * d).toInt()
-            height = (TabStyle.heightDp(p) * d).toInt()
-        }
         return VH(v)
     }
 
@@ -55,23 +89,9 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
     override fun onBindViewHolder(h: VH, position: Int) {
         val t = a.tabs[position]
         val selected = position == a.current
-        h.itemView.isSelected = selected
         val pf = Prefs(h.itemView.context)
-        val dn = h.itemView.resources.displayMetrics.density
-        h.itemView.layoutParams = h.itemView.layoutParams.apply {
-            width = (TabStyle.widthDp(pf) * dn).toInt()
-            height = (TabStyle.heightDp(pf) * dn).toInt()
-        }
-        val ctx = h.itemView.context
-        h.itemView.background = if (selected) {
-            android.graphics.drawable.GradientDrawable().apply {
-                setColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.pill))
-                cornerRadius = 20 * dn
-                if (pf.bool(K.TAB_OUTLINE))
-                    setStroke((2 * dn).toInt(), TabStyle.COLORS[pf.int(K.TAB_COLOR).coerceIn(0, 7)])
-            }
-        } else androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.bg_tab_off)
-        h.close.visibility = if (pf.bool(K.TAB_CLOSE_BTN)) View.VISIBLE else View.GONE
+        TabStyle.style(h.itemView, selected, pf.bool(K.TAB_OUTLINE), pf.int(K.TAB_COLOR),
+            pf.bool(K.TAB_CLOSE_BTN), pf.int(K.TAB_W_PCT), pf.int(K.TAB_H_PCT))
         h.title.text = t.label()
         h.title.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         h.icon.setTabIcon(t)

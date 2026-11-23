@@ -18,3 +18,5 @@ Soul's launcher icon, logos and name are Soul's trademarks and are NOT copied. T
 (Apache 2.0) taken from the APK.
 
 Tab: where to add, show tab bar (3 modes), detailed settings dialog, swipe up/down, tab indicator, undelete, list style, keyboard, home icon closes all, last page notification, previous button on last page. Not done: automatic grouping, tab loop, tap animation, swipe from last page, open-in-new-tab sub-options.
+
+Tab > Detailed settings now has a live preview that follows outline, colour, add button side, close button, width (50-200%) and height (50-200%).

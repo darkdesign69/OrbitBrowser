@@ -111,3 +111,8 @@ RULE FROM THE USER (every delivery): whenever a new zip is given, update this HA
 another model can continue. Full chat history and analysis are in docs/PROJECT_HISTORY.md. Read it before doing anything.
 
 Lesson: bindViews() assigns lateinit views in order; anything using tabStrip/tabBarRow must run after ALL are assigned (a crash at launch came from calling setupTabBarSwipe too early).
+
+Reverse-engineering tool (added after delivery 17): tools/soul/dis.py is a Dalvik bytecode disassembler (own code, no jadx/apktool needed).
+ usage: python3 tools/soul/dis.py <dir with Soul classes*.dex> <class substring> [method substring]
+ It prints const-string, constants, field reads/writes and every call per method, so real Soul logic can be read (not only names).
+ First finding: Soul's main menu (DialogMenuMain) is a bottom dialog (MyDialogBottom) with ViewPager2 + TabLayout pages, MenuListAdapter (rows) + MenuIconAdapter (icon grid, PrefMain.x = icon count, default 5), remembered page pref "mMenuPage" (PrefMain.y), mode PrefMain.w. Next: disassemble DialogMenuMain$* / MenuListAdapter / MenuIconAdapter and MainUtil to get the real row order and sizes, then rebuild Orbit's menu from that instead of from screenshots alone.

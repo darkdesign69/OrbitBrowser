@@ -75,3 +75,6 @@ UNVERIFIED by compile until the user's build).
 Not done / ideas: tab groups and Automatic grouping, tab loop and animation, tab switcher visuals, home-screen start page
 (circular tiles, group folders), Library screens, web cleaner element tools, floating buttons, video manager and player
 gestures, reader/translator extras, Soul-style bottom-sheet menu, userscripts, "Open in new tab" sub-options.
+
+Delivery 16: player gestures (double tap +-10 s, long press 2x, horizontal seek, vertical brightness/volume), more Soul-style settings parity; user chose "All, fast".
+Delivery 17: home tiles fetch real site icons (StartPage.fetchIcon). User asked to decompile Soul properly; tools/soul/dis.py (Dalvik disassembler) added, first target Soul's main menu (bottom dialog with pages, see HANDOFF.md).

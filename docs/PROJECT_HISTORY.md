@@ -79,3 +79,5 @@ gestures, reader/translator extras, Soul-style bottom-sheet menu, userscripts, "
 Delivery 16: player gestures (double tap +-10 s, long press 2x, horizontal seek, vertical brightness/volume), more Soul-style settings parity; user chose "All, fast".
 Delivery 17: home tiles fetch real site icons (StartPage.fetchIcon). User asked to decompile Soul properly; tools/soul/dis.py (Dalvik disassembler) added, first target Soul's main menu (bottom dialog with pages, see HANDOFF.md).
 Delivery 18: menu row sizes from Soul bytecode (docs/SOUL_DIMENS.txt); audit showed menu/groups/tab chips already structurally match Soul.
+Delivery 19: blank page fix (SwipeRefreshLayout stale target -> permanent webFrame child); media button shrunk to Soul's 32dp.
+Delivery 19b: healWeb safety net for blank pages (user said it happens on almost every site).

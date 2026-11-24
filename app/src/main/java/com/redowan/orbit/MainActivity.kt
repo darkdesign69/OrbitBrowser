@@ -781,6 +781,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Shows the selected tab: start page or its WebView. */
+    private val webFrame by lazy {
+        android.widget.FrameLayout(this).also {
+            webHolder.addView(it, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        }
+    }
+
+    /** Safety net for a blank page: the current page must be attached to webFrame and have a size; if not, attach it again. */
+    private fun healWeb(t: Tab) {
+        val w = t.web ?: return
+        if (t !== cur || t.home) return
+        if (w.parent !== webFrame || w.width == 0 || w.height == 0) {
+            (w.parent as? ViewGroup)?.removeView(w)
+            webFrame.removeAllViews()
+            webFrame.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            webHolder.visibility = View.VISIBLE
+            webHolder.requestLayout()
+        }
+    }
+
     private fun showTab() {
         val t = cur
         closeFind()
@@ -796,8 +815,10 @@ class MainActivity : AppCompatActivity() {
                 w.loadUrl(t.url ?: "about:blank")
             }
             (w.parent as? ViewGroup)?.removeView(w)
-            webHolder.removeAllViews()
-            webHolder.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            // SwipeRefreshLayout keeps its first child as the scroll target for good, so a swapped WebView would
+            // never be laid out (blank page). The one permanent child is webFrame; pages are swapped inside it.
+            webFrame.removeAllViews()
+            webFrame.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             webHolder.visibility = View.VISIBLE
             startList.visibility = View.GONE
             // a page that was created in the background (popup, restored tab) must be awake and drawn
@@ -806,6 +827,7 @@ class MainActivity : AppCompatActivity() {
             w.onResume()
             w.resumeTimers()
             w.post { w.requestLayout(); w.invalidate() }
+            ui.postDelayed({ healWeb(t) }, 400)
         }
         urlField.imeOptions = EditorInfo.IME_ACTION_GO or
             (if (t.incognito && prefs.keySecure) EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING else 0)
@@ -1080,6 +1102,7 @@ class MainActivity : AppCompatActivity() {
             tab.loading = true
             tab.progress = 0
             tab.home = false
+            ui.postDelayed({ healWeb(tab) }, 700)
             if (!url.isNullOrEmpty() && url != tab.url) { tab.media.clear(); ui.post(mediaTick) }
             if (!url.isNullOrEmpty() && !url.startsWith("data:")) {
                 tab.url = url

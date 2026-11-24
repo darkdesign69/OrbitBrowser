@@ -175,8 +175,10 @@
 
         <ImageButton
             android:id="@+id/fabMedia"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
             android:layout_gravity="top|start"
             android:background="@drawable/bg_media_fab"
             android:contentDescription="Detected media"

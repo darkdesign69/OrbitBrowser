@@ -116,3 +116,6 @@ Reverse-engineering tool (added after delivery 17): tools/soul/dis.py is a Dalvi
  usage: python3 tools/soul/dis.py <dir with Soul classes*.dex> <class substring> [method substring]
  It prints const-string, constants, field reads/writes and every call per method, so real Soul logic can be read (not only names).
  First finding: Soul's main menu (DialogMenuMain) is a bottom dialog (MyDialogBottom) with ViewPager2 + TabLayout pages, MenuListAdapter (rows) + MenuIconAdapter (icon grid, PrefMain.x = icon count, default 5), remembered page pref "mMenuPage" (PrefMain.y), mode PrefMain.w. Next: disassemble DialogMenuMain$* / MenuListAdapter / MenuIconAdapter and MainUtil to get the real row order and sizes, then rebuild Orbit's menu from that instead of from screenshots alone.
+
+Delivery 18 (UNVERIFIED by compile): menu rows now use Soul's exact numbers (item_pmenu.xml: 52dp row, 20dp icon at 20dp, 16sp label) read from bytecode; full Soul dp table saved in docs/SOUL_DIMENS.txt.
+ Checked against code: Orbit's popup menu (3 grouped cards + quick row + bottom row), home groups (2x2 preview, header, drag-into-group) and tab chips already follow Soul's structure; remaining differences are pixel-level. Method for the rest: dis.py on the Soul class, read sizes via MainApp.<name> and map with SOUL_DIMENS.txt.

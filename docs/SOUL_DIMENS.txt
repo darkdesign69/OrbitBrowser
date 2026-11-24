@@ -1,0 +1,7 @@
+Soul MainApp static dp table (read from bytecode with tools/soul/dis.py; values in dp, px = dp*density)
+S0 600 | T0 48 | U0 144 | V0 40 | W0 56 | X0 88 | Y0 150 | Z0 16
+a1 40 | b1 48 | c1 56 | d1 64 | e1 16 | f1 20 | g1 16 | h1 16 | i1 1 | j1 140 | k1 4 | l1 10 | m1 10 | n1 80
+o1 20 | p1 15 | q1 8 | r1 3 | s1 4 | t1 3 | u1 24 | w1 16 | x1 4 | y1 24 | z1 16 | A1 8 | B1 4 | C1 4
+Menu list row (MenuListAdapter.onCreateViewHolder, mode PrefMain.w=0): row 52dp, icon 20dp at start 20dp, label 16sp at start 52dp, card right margin 8dp (A1).
+ mode w=1: icon start 22dp, label start 64dp.
+Menu icon grid (MenuIconAdapter.o): cell height a1=40dp or b1=48dp, label 12sp (14sp variant), padding B1=4dp.

@@ -101,7 +101,7 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
 
     override fun onBindViewHolder(h: VH, position: Int) {
         val idx = a.slots.getOrNull(position) ?: return
-        val t = a.tabs[idx]
+        val t = a.tabs.getOrNull(idx) ?: return   // slots can be one step behind right after a tab was closed
         val selected = idx == a.current
         val pf = a.prefs
         TabStyle.style(h.itemView, selected, pf.bool(K.TAB_OUTLINE), pf.int(K.TAB_COLOR),
@@ -121,7 +121,8 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         h.itemView.setOnClickListener {
             val p = h.bindingAdapterPosition
             val i = a.slots.getOrNull(p) ?: return@setOnClickListener
-            if (i == a.current && a.groupSize(a.tabs[i].group) > 1) a.showGroupMenu(h.itemView, a.tabs[i].group) else a.select(i)
+            val g = a.tabs.getOrNull(i)?.group ?: return@setOnClickListener
+            if (i == a.current && a.groupSize(g) > 1) a.showGroupMenu(h.itemView, g) else a.select(i)
         }
         h.close.setOnClickListener {
             val i = a.slots.getOrNull(h.bindingAdapterPosition) ?: return@setOnClickListener

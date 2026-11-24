@@ -224,6 +224,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+        showLastCrash()
+    }
+
+    /** Shows the stack trace of the last crash once (OrbitApp saves it), so it can be copied and sent. */
+    private fun showLastCrash() {
+        val trace = OrbitApp.takeCrash(this) ?: return
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Orbit closed unexpectedly last time")
+            .setMessage(trace.take(3000))
+            .setPositiveButton("Copy") { _, _ ->
+                (getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                    .setPrimaryClip(android.content.ClipData.newPlainText("crash", trace))
+            }
+            .setNegativeButton("Close", null)
+            .show()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -784,7 +799,11 @@ class MainActivity : AppCompatActivity() {
         if (tabs.isEmpty()) {
             tabs.add(Tab(null)); current = 0
         } else if (p < current) current--
-        else if (p == current) current = p.coerceAtMost(tabs.size - 1)
+        else if (p == current) {
+            // back to the tab used just before (the opener of a popup), not simply the neighbour
+            current = tabs.indices.maxByOrNull { tabs[it].touched } ?: p.coerceAtMost(tabs.size - 1)
+        }
+        slots = computeSlots()   // the strip must never see indices of the tab that was just removed
         showTab()
         if (prefs.bool(K.TAB_UNDO) && !undoInc && !undoUrl.isNullOrEmpty()) {
             showUndoBar {
@@ -834,7 +853,11 @@ class MainActivity : AppCompatActivity() {
     private fun destroyTab(t: Tab) {
         t.web?.let { w ->
             (w.parent as? ViewGroup)?.removeView(w)
-            w.destroy()
+            w.stopLoading()
+            w.webViewClient = WebViewClient()
+            w.webChromeClient = WebChromeClient()
+            // destroy() inside a WebView callback (window.close() after a Google sign-in popup) can crash: do it after the callback returned
+            ui.post { try { w.destroy() } catch (_: Exception) {} }
         }
         t.web = null
         upgraded.remove(t)
@@ -1464,8 +1487,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onCloseWindow(window: WebView) {
-            val i = tabs.indexOf(tab)
-            if (i >= 0 && tabs.size > 1) closeTab(i)
+            ui.post {
+                val i = tabs.indexOf(tab)
+                if (i >= 0 && tabs.size > 1) closeTab(i)
+            }
         }
 
         override fun onPermissionRequest(request: android.webkit.PermissionRequest) = request.deny()

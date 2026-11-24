@@ -89,6 +89,10 @@ object K {
     const val TAB_SWIPE_UP = "tab_swipe_up"      // 0 none, 1 tab list, 2 close tab, 3 new tab
     const val TAB_SWIPE_DN = "tab_swipe_dn"
     const val TAB_INDI = "tab_indi"
+    const val AUTO_GROUP = "auto_group"
+    const val HDR_MODE = "hdr_mode"            // 0 default, 1 custom colour
+    const val HDR_COLOR = "hdr_color"          // ARGB
+    const val LAY_VER = "lay_ver"
     const val TAB_UNDO = "tab_undo"
     const val LAST_NOTI = "last_noti"
     const val KEYBOARD_ADD = "keyboard_add"
@@ -283,7 +287,7 @@ class Prefs(context: Context) {
             K.DEBUG_WEB to false,
             K.LAY_TOP to Bars.DEFAULT_TOP,
             K.LAY_BOTTOM to Bars.DEFAULT_BOTTOM,
-            K.LAY_TOP_H to 44,
+            K.LAY_TOP_H to 50,
             K.LAY_ICON to 40,
             K.TAB_BAR_MODE to 1,
             K.TAB_OUTLINE to true,
@@ -294,10 +298,14 @@ class Prefs(context: Context) {
             K.TAB_H_PCT to 73,
             K.TAB_SWIPE_UP to 1,
             K.TAB_SWIPE_DN to 2,
-            K.TAB_INDI to false,
+            K.TAB_INDI to true,
+            K.AUTO_GROUP to true,
+            K.HDR_MODE to 0,
+            K.HDR_COLOR to 0xFFE53935.toInt(),
+            K.LAY_VER to 0,
             K.TAB_UNDO to true,
             K.LAST_NOTI to true,
-            K.LAY_TAB_H to 34,
+            K.LAY_TAB_H to 42,
             K.LAY_TAB_W to 156,
             K.LAY_BOT_H to 52,
             K.LAY_COLS to 4,

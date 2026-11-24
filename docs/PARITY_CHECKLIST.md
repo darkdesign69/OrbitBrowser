@@ -12,7 +12,7 @@ Dark image + Image brightness, Go back without refresh.
 ## MISSING settings (from the comparison)
 - Composition: Landscape mode, Search bar button, Search suggestions (sources), Auto complete, Recent searches (limit, incognito),
   One-handed mode button, Button color, Area size, Use scroll animation
-- Display: Site theme, Header color, Dark mode Home
+- Display: Site theme, Dark mode Home (Header color done in delivery 21)
 - Web cleaner: Element inspection, Block area, Blocked images, Check once / Keep checking
 - Memory: Memory retention period
 - Media: Background playback, Button color, Detailed settings (floating button)
@@ -25,7 +25,6 @@ Dark image + Image brightness, Go back without refresh.
 - Privacy / Secure: Notification when deleted, Initialization target
 - Font: Default font, Boldface; Web: Text only
 - General: Create a PDF shortcut, Language resource; Info: Blog, Privacy Policy, Terms, FAQ
-- Tab: Automatic grouping (needs tab groups)
 - Not planned: Purchase / in-app ads / donation (billing), Google Drive backup
 
 ## Visual parity still to do (needs reference screenshots)

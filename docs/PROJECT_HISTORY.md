@@ -85,3 +85,10 @@ Delivery 19b: healWeb safety net for blank pages (user said it happens on almost
 Delivery 20: user (2026-11-24) compared Soul and Orbit download recordings. Findings: Orbit button size already equals Soul's (88 px); Orbit's download dialog was too small
 and plain; stream quality list needed its own rows; the downloads screen did not look like Soul's (wallpaper cards, only current-session items, "126 B" size bug).
 Rebuilt dialog, downloads list, download location. Details in HANDOFF.md "Delivery 20".
+
+Delivery 21: user (2026-11-24, Soul vs Orbit screenshots + side-by-side photo) said Orbit's tab/top bar sizes and positions differ from Soul, Soul has many more
+colours (header colour palette, tab outline), Automatic grouping and home groups, a tab indicator (225/288), and that swiping the address bar to change tabs
+is laggy and the site/transition is not smooth. Done: measured sizes, Palette + Header colour, 10 tab colours + grid, auto grouping with badge chip,
+indicator default on, stale home favicon, faster tab switching + slide animation. Details: HANDOFF.md "Delivery 21".
+Base = orbit-full__6___6_.zip (identical to OrbitBrowser-main__4_ except .github). craft-anything / REA MCP tools were again not connected; measurements
+were made with PIL on the screenshots.

@@ -21,7 +21,7 @@ Done so far
   tab indicator (pos/total), Undelete (custom Undo bar in MainActivity.showUndoBar; Snackbar is NOT usable: theme is AppCompat),
   last page notification, previous button on last page (close tab / exit). Keys K.TAB_* in Prefs.kt. Tab item size:
   TabStyle.widthDp/heightDp (100% = 192dp x 52dp). Layout editor "Tab width" now edits K.TAB_W_PCT.
-  Not implemented on purpose: Automatic grouping (Orbit has no tab groups), Tab loop, tap animation, swipe-from-last-page,
+  Not implemented on purpose: Tab loop, tap animation, swipe-from-last-page,
   Open in new tab sub-options.
 
 Delivery 12 (UNVERIFIED by compile, from the user's screenshots of Soul vs Orbit):
@@ -140,3 +140,25 @@ Delivery 18 (UNVERIFIED by compile): menu rows now use Soul's exact numbers (ite
 
 Delivery 19 (UNVERIFIED by compile): (1) BLANK PAGE ROOT CAUSE (likely): webHolder is a SwipeRefreshLayout, which keeps its first child as scroll target; showTab used removeAllViews()+addView(webview) so the new WebView was never laid out (size 0, wallpaper visible; media button and title still worked). Fix: permanent child `webFrame` (lazy FrameLayout), pages are swapped inside it. Never add/remove WebViews directly on SwipeRefreshLayout. (2) Media button 48dp -> 32dp (Soul's is 88px at 2.75 density = 32dp), icon padding 6dp.
  Delivery 19b: added MainActivity.healWeb(tab): 400 ms after showTab and 700 ms after onPageStarted it checks the current page is attached to webFrame with non-zero size and re-attaches it if not (safety net for the blank-page bug).
+
+Delivery 21 (UNVERIFIED by compile; from the user's Soul vs Orbit screenshots of 2026-11-24 11:42-11:48 and the side-by-side photo):
+- MEASURED from the 1080 px screenshots (2.627 px/dp): Soul top row 50dp (pill 33.5dp, centred), tab row 42dp, tab chip 100% = 34dp tall, 80% = 112dp wide
+  (so 100% = 140dp), gap between chips 8dp, first chip 4dp from the edge, chip CENTRED in the row. Orbit had 44dp / 34dp rows, 30dp chips
+  and the chip stuck to the top of the row (RecyclerView item): now TabStyle.widthDp = pct*140/100, heightDp = pct*34/100, TabStyle.rowDp(prefs),
+  adapter sets topMargin = (row - chip)/2. Defaults: LAY_TOP_H 50, LAY_TAB_H 42, pill = row - 16dp. One-time migration (K.LAY_VER < 2) removes old saved
+  LAY_TOP_H / LAY_TAB_H so the new sizes apply. activity_main.xml: addrRow 50dp, tabBarRow 42dp, strip padding 4dp.
+- Colours: Palette.kt = Soul's colour grid (15 hues x 4 shades, Material 600-900, read from the user's Header colour screenshot) as an AlertDialog.
+  Display > "Header" (Default/Custom, K.HDR_MODE) + "Header color" (K.HDR_COLOR; every Col row in Settings now uses the grid; picking the header colour turns Custom on).
+  MainActivity.applyHeader(): top bar, tab bar and status bar get the colour, icons/text become white or dark by luminance (hdrFg()), URL pill and chips
+  become a 20% tint of the text colour, tab-count box is outlined. Called from applyThemeBg() and rebuildBars(). Not done: "Site theme" header (theme-color meta).
+- Tab outline colours: TabStyle.COLORS = 10 swatches sampled from Soul (red FF0000, orange FB8C00, purple 8E24AA, light green 689F38, dark green 1B5E20,
+  lavender A5A8E8, indigo 3949AB, gray 616161, dark gray 424242, black) + a "+" dot opening the full grid. K.TAB_COLOR may be an old index (0-9) or an ARGB colour: TabStyle.colorOf().
+- Tab indicator default ON (pos/total, "225/288" like Soul); the count is refreshed on every tab change (refreshTabs -> tabCountSync).
+- Automatic grouping (Tab settings, K.AUTO_GROUP, default on): Tab.group / Tab.touched; onCreateWindow gives the new tab the opener's group id.
+  The tab strip shows ONE chip per group (MainActivity.slots/computeSlots, most recently used member) with a red count badge (item_tab_strip tabBadge);
+  tapping the chip of the open group lists its tabs (showGroupMenu). Groups are not saved with the session (keep tabs) and not shown in the tab switcher.
+- Home-screen groups already existed (delivery 13: long-press a tile > Move to group > New group, drag a tile onto a group). Still not done: drop a shortcut on another shortcut to create a group.
+- Home tab showed the previous site's favicon (setTabIcon): home now wins over favicon.
+- LAG when switching tabs (swipe address bar / chip): showTab detached and re-attached the WebView every time and rebound every chip. Now pages stay attached to
+  webFrame and only visibility is toggled; select() rebinds just the two affected chips (refreshTabs(oldCur)) and runs slideIn() (160 ms slide+fade of the page area).
+  healWeb no longer clears the other pages. If a page is still blank after a switch, look at healWeb and ThemeBg.refresh first.

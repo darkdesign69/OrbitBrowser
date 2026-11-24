@@ -296,7 +296,7 @@ class LayoutActivity : AppCompatActivity() {
             when (id) {
                 "address" -> col.addView(View(col.context).apply {
                     background = Ui.roundRect(color(R.color.pill), dp(14).toFloat())
-                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp((prefs.int(K.LAY_TOP_H) - 12).coerceAtLeast(30))).apply {
+                }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp((prefs.int(K.LAY_TOP_H) - 16).coerceAtLeast(30))).apply {
                     marginStart = dp(4); marginEnd = dp(4)
                 })
                 "tabs" -> col.addView(FrameLayout(col.context).apply {

@@ -19,6 +19,10 @@ class Tab(var url: String?, val incognito: Boolean = false) {
     var progress: Int = 0
     var readerOn: Boolean = false
 
+    /** 0 = not grouped. Tabs opened by a page of the same site share the id of the tab that opened them (Tab > Automatic grouping). */
+    var group: Int = 0
+    var touched: Long = 0
+
     /** Media files seen on this page (video, streams, audio, subtitles). Written from the network thread. */
     val media = CopyOnWriteArrayList<MediaItem>()
 

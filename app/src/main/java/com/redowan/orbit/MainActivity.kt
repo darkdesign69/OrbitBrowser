@@ -37,6 +37,7 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.graphics.drawable.GradientDrawable
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
@@ -170,6 +171,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
+        if (prefs.int(K.LAY_VER) < 2) {      // bar sizes now measured from Soul (top 50dp, tab row 42dp): drop old saved sizes once
+            prefs.sp.edit().remove(K.LAY_TOP_H).remove(K.LAY_TAB_H).putInt(K.LAY_VER, 2).apply()
+        }
         store = Store(this)
         AdBlocker.load(this)
         setContentView(R.layout.activity_main)
@@ -475,7 +479,7 @@ class MainActivity : AppCompatActivity() {
                 if (addressDone || bottom) continue
                 addressDone = true
                 (urlPill.parent as? ViewGroup)?.removeView(urlPill)
-                val pillH = (prefs.int(K.LAY_TOP_H) - 12).coerceAtLeast(26)
+                val pillH = (prefs.int(K.LAY_TOP_H) - 16).coerceAtLeast(26)
                 urlPill.layoutParams = LinearLayout.LayoutParams(0, dp(pillH), 1f).apply {
                     marginStart = dp(4); marginEnd = dp(4)
                 }
@@ -497,7 +501,7 @@ class MainActivity : AppCompatActivity() {
         addrRow.layoutParams = addrRow.layoutParams.apply { height = dp(prefs.int(K.LAY_TOP_H)) }
         addrRow.visibility = if (top.isEmpty()) View.GONE else View.VISIBLE
         // the row is never shorter than the tabs themselves (Settings > Tab > Detailed settings > Height)
-        val tabRowH = maxOf(prefs.int(K.LAY_TAB_H), TabStyle.heightDp(prefs) + 8)
+        val tabRowH = TabStyle.rowDp(prefs)
         tabBarRow.layoutParams = tabBarRow.layoutParams.apply { height = dp(tabRowH) }
         navRow.layoutParams = navRow.layoutParams.apply { height = dp(prefs.int(K.LAY_BOT_H)) }
         navRow.visibility = if (bottom.isEmpty()) View.GONE else View.VISIBLE
@@ -510,7 +514,85 @@ class MainActivity : AppCompatActivity() {
             r.addView(addBtn, if (prefs.int(K.TAB_ADD_RIGHT) == 1) r.childCount else 0)
         }
         tabCountSync()
-        stripAdapter.notifyDataSetChanged()
+        fullStrip()
+        applyHeader()
+    }
+
+    // ------------------------------------------------------------------ tab groups and strip
+
+    /** Tab indices shown as chips: a group shows ONE chip (its most recently used tab) with a count badge. */
+    var slots: List<Int> = emptyList()
+        private set
+
+    private var groupSeq = 0
+
+    private fun computeSlots(): List<Int> {
+        val best = HashMap<Int, Int>()
+        for (i in tabs.indices) {
+            val g = tabs[i].group
+            if (g != 0) { val b = best[g]; if (b == null || tabs[i].touched > tabs[b].touched) best[g] = i }
+        }
+        val out = ArrayList<Int>(tabs.size)
+        val done = HashSet<Int>()
+        for (i in tabs.indices) {
+            val g = tabs[i].group
+            if (g == 0) out.add(i) else if (done.add(g)) out.add(best[g] ?: i)
+        }
+        return out
+    }
+
+    fun groupSize(g: Int): Int = if (g == 0) 0 else tabs.count { it.group == g }
+
+    private fun fullStrip() { slots = computeSlots(); stripAdapter.notifyDataSetChanged() }
+
+    /** Tap on the chip of the open group: list its tabs. */
+    fun showGroupMenu(anchor: View, g: Int) {
+        val m = android.widget.PopupMenu(this, anchor)
+        tabs.indices.filter { tabs[it].group == g }.forEachIndexed { n, i ->
+            m.menu.add(0, i, n, (if (i == current) "\u2713 " else "") + tabs[i].label().take(40))
+        }
+        m.setOnMenuItemClickListener { select(it.itemId); true }
+        m.show()
+    }
+
+    // ------------------------------------------------------------------ header colour (Display > Header)
+
+    private fun hdrColor(): Int? = if (prefs.int(K.HDR_MODE) == 1) prefs.int(K.HDR_COLOR) else null
+
+    /** Text/icon colour on the header: dark on a light colour, white on a dark one; 0 = no custom header. */
+    fun hdrFg(): Int {
+        val c = hdrColor() ?: return 0
+        return if (androidx.core.graphics.ColorUtils.calculateLuminance(c) > 0.6) 0xFF202020.toInt() else 0xFFFFFFFF.toInt()
+    }
+
+    /** Paints top bar, tab bar and status bar in the custom header colour and recolours their icons and text. */
+    private fun applyHeader() {
+        if (!::addrRow.isInitialized || !::urlPill.isInitialized) return
+        val c = hdrColor()
+        val fg = hdrFg()
+        if (c != null) {
+            addrRow.setBackgroundColor(c); tabBarRow.setBackgroundColor(c)
+            window.statusBarColor = c
+        }
+        fun tint(v: View) {
+            if (v === tabStrip) return
+            if (v is ImageButton) { if (fg != 0) v.setColorFilter(fg) else v.clearColorFilter() }
+            else if (v is ViewGroup) for (i in 0 until v.childCount) tint(v.getChildAt(i))
+        }
+        tint(addrRow); tint(tabBarRow)
+        if (fg != 0) {
+            val soft = (fg and 0xFFFFFF) or 0x30000000
+            urlField.setTextColor(fg); urlField.setHintTextColor((fg and 0xFFFFFF) or 0x99000000.toInt())
+            urlPill.background = GradientDrawable().apply { setColor(soft); cornerRadius = dp(24).toFloat() }
+            countViews.forEach { v ->
+                v.setTextColor(fg)
+                v.background = GradientDrawable().apply { setColor(0); setStroke(dp(2), fg); cornerRadius = dp(8).toFloat() }
+            }
+        } else {
+            urlField.setTextColor(color(R.color.text)); urlField.setHintTextColor(color(R.color.text_sub))
+            urlPill.setBackgroundResource(R.drawable.bg_pill)
+            countViews.forEach { v -> v.setTextColor(color(R.color.icon)); v.setBackgroundResource(R.drawable.bg_tabcount) }
+        }
     }
 
     private fun countText() =
@@ -586,6 +668,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             webHolder.setColorSchemeResources(R.color.accent_dark)
         }
+        applyHeader()
     }
 
     private fun applyDisplayPrefs() {
@@ -674,8 +757,22 @@ class MainActivity : AppCompatActivity() {
 
     fun select(p: Int) {
         if (p !in tabs.indices) return
+        val old = current
         current = p
-        showTab()
+        showTab(old)
+        if (p != old) slideIn(if (p > old) 1 else -1)
+    }
+
+    /** Short slide + fade of the page area from the side the new tab lies on (swipe on the address bar or tap on a chip). */
+    private fun slideIn(dir: Int) {
+        for (v in arrayOf<View>(webHolder, startList)) {
+            if (v.visibility != View.VISIBLE) continue
+            v.animate().cancel()
+            v.translationX = dir * v.width * 0.15f
+            v.alpha = 0.5f
+            v.animate().translationX(0f).alpha(1f).setDuration(160)
+                .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+        }
     }
 
     fun closeTab(p: Int) {
@@ -757,10 +854,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshTabs() {
-        stripAdapter.notifyDataSetChanged()
+    /** [oldCur] given = only the selection changed: when the chips are the same just the two affected ones are rebound. */
+    private fun refreshTabs(oldCur: Int = -1) {
+        val old = slots
+        slots = computeSlots()
+        val pos = slots.indexOf(current)
+        if (oldCur >= 0 && old == slots) {
+            val op = slots.indexOf(oldCur)
+            if (op >= 0) stripAdapter.notifyItemChanged(op)
+            if (pos >= 0) { stripAdapter.notifyItemChanged(pos); tabStrip.smoothScrollToPosition(pos) }
+        } else {
+            stripAdapter.notifyDataSetChanged()
+            if (pos >= 0) tabStrip.scrollToPosition(pos)
+        }
         tabCountSync()
-        if (current in tabs.indices) tabStrip.scrollToPosition(current)
     }
 
     private fun restoreTabs() {
@@ -793,15 +900,16 @@ class MainActivity : AppCompatActivity() {
         if (t !== cur || t.home) return
         if (w.parent !== webFrame || w.width == 0 || w.height == 0) {
             (w.parent as? ViewGroup)?.removeView(w)
-            webFrame.removeAllViews()
             webFrame.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            w.visibility = View.VISIBLE
             webHolder.visibility = View.VISIBLE
             webHolder.requestLayout()
         }
     }
 
-    private fun showTab() {
+    private fun showTab(oldCur: Int = -1) {
         val t = cur
+        t.touched = System.nanoTime()
         closeFind()
         if (t.home) {
             webHolder.visibility = View.GONE
@@ -814,19 +922,21 @@ class MainActivity : AppCompatActivity() {
                 applyWebSettings(t)
                 w.loadUrl(t.url ?: "about:blank")
             }
-            (w.parent as? ViewGroup)?.removeView(w)
-            // SwipeRefreshLayout keeps its first child as the scroll target for good, so a swapped WebView would
-            // never be laid out (blank page). The one permanent child is webFrame; pages are swapped inside it.
-            webFrame.removeAllViews()
-            webFrame.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            // Pages stay attached to webFrame and are only shown / hidden. Detaching and re-attaching a WebView on every
+            // switch was the lag and the blank page. webFrame is the one permanent child of the SwipeRefreshLayout.
+            if (w.parent !== webFrame) {
+                (w.parent as? ViewGroup)?.removeView(w)
+                webFrame.addView(w, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            }
+            for (i in 0 until webFrame.childCount) {
+                val c = webFrame.getChildAt(i)
+                c.visibility = if (c === w) View.VISIBLE else View.GONE
+            }
             webHolder.visibility = View.VISIBLE
             startList.visibility = View.GONE
-            // a page that was created in the background (popup, restored tab) must be awake and drawn
-            w.visibility = View.VISIBLE
             w.alpha = 1f
             w.onResume()
             w.resumeTimers()
-            w.post { w.requestLayout(); w.invalidate() }
             ui.postDelayed({ healWeb(t) }, 400)
         }
         urlField.imeOptions = EditorInfo.IME_ACTION_GO or
@@ -836,7 +946,7 @@ class MainActivity : AppCompatActivity() {
         updateSecureFlag()
         updateAddress()
         updateNav()
-        refreshTabs()
+        refreshTabs(oldCur)
         updateMediaFab()
         enforceTabLimit()
     }
@@ -851,7 +961,7 @@ class MainActivity : AppCompatActivity() {
                 tabs.removeAt(i); destroyTab(victim)
                 if (i < current) current--
             }
-            stripAdapter.notifyDataSetChanged()
+            fullStrip()
         }
         val limit = prefs.int("mem_tab_limit")
         if (limit <= 0) return
@@ -1281,7 +1391,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
             tab.favicon = icon
             if (!tab.incognito) store.saveFavicon(tab.host, icon)
-            stripAdapter.notifyDataSetChanged()
+            fullStrip()
         }
 
         override fun onShowCustomView(view: View, cb: WebChromeClient.CustomViewCallback) {
@@ -1317,6 +1427,10 @@ class MainActivity : AppCompatActivity() {
             if (mode == 2 || (mode == 1 && !isUserGesture)) return false
             val t = Tab(null, tab.incognito)
             t.home = false
+            if (prefs.bool(K.AUTO_GROUP) && !tab.home) {       // Tab > Automatic grouping: a new window opened by a page joins its group
+                if (tab.group == 0) tab.group = ++groupSeq
+                t.group = tab.group
+            }
             val idx = if (prefs.tabNext) (current + 1).coerceAtMost(tabs.size) else tabs.size
             tabs.add(idx, t)
             current = idx

@@ -13,22 +13,28 @@ import androidx.recyclerview.widget.RecyclerView
 
 private fun ImageView.setTabIcon(t: Tab) {
     when {
-        t.favicon != null -> setImageBitmap(t.favicon)
         t.incognito -> setImageResource(R.drawable.ic_incognito)
-        t.home -> setImageResource(R.drawable.ic_home)
+        t.home -> setImageResource(R.drawable.ic_home)        // a stale favicon must not stay on a tab that went Home
+        t.favicon != null -> setImageBitmap(t.favicon)
         else -> setImageResource(R.drawable.ic_globe)
     }
 }
 
 object TabStyle {
-    val NAMES = listOf("Red", "Orange", "Purple", "Light green", "Dark green", "Lavender", "Blue", "Gray")
+    // swatch colours sampled from Soul's Detailed settings screenshot
+    val NAMES = listOf("Red", "Orange", "Purple", "Light green", "Dark green", "Lavender", "Indigo", "Gray", "Dark gray", "Black")
     val COLORS = intArrayOf(
-        0xFFE53935.toInt(), 0xFFFB8C00.toInt(), 0xFF8E24AA.toInt(), 0xFF7CB342.toInt(),
-        0xFF1E8E3E.toInt(), 0xFFB39DDB.toInt(), 0xFF1E88E5.toInt(), 0xFF9E9E9E.toInt()
+        0xFFFF0000.toInt(), 0xFFFB8C00.toInt(), 0xFF8E24AA.toInt(), 0xFF689F38.toInt(), 0xFF1B5E20.toInt(),
+        0xFFA5A8E8.toInt(), 0xFF3949AB.toInt(), 0xFF616161.toInt(), 0xFF424242.toInt(), 0xFF000000.toInt()
     )
-    /** Soul 1.4.86 measured on a 411dp screen: 81% x 73% is about 115dp x 22dp, so 100% is 142dp x 30dp. */
-    fun widthDp(pct: Int) = pct * 142 / 100
-    fun heightDp(pct: Int) = (pct * 30 / 100).coerceIn(20, 64)
+    /** The saved colour is a swatch index (old versions) or an ARGB colour from the palette. */
+    fun colorOf(v: Int) = if (v in COLORS.indices) COLORS[v] else v or 0xFF000000.toInt()
+
+    /** Measured on Soul 1.4.86 (411dp screen, 1080 px): at 80% x 100% a tab is 112dp x 33.5dp, so 100% is 140dp x 34dp. */
+    fun widthDp(pct: Int) = pct * 140 / 100
+    fun heightDp(pct: Int) = (pct * 34 / 100).coerceIn(20, 72)
+    /** Height of the tab bar row (Soul: 42dp, the tab sits in the middle). */
+    fun rowDp(p: Prefs) = maxOf(p.int(K.LAY_TAB_H), heightDp(p) + 8)
     fun widthDp(p: Prefs) = widthDp(p.int(K.TAB_W_PCT))
     fun heightDp(p: Prefs) = heightDp(p.int(K.TAB_H_PCT))
 
@@ -36,7 +42,7 @@ object TabStyle {
      * Paints one pill tab (item_tab_strip). The real tab bar and the live preview in
      * Settings > Tab > Detailed settings both call this, so they always look the same.
      */
-    fun style(v: View, selected: Boolean, outline: Boolean, color: Int, closeBtn: Boolean, wPct: Int, hPct: Int) {
+    fun style(v: View, selected: Boolean, outline: Boolean, color: Int, closeBtn: Boolean, wPct: Int, hPct: Int, hdrFg: Int = 0) {
         val ctx = v.context
         val d = ctx.resources.displayMetrics.density
         val h = heightDp(hPct)
@@ -47,13 +53,19 @@ object TabStyle {
             v.layoutParams = lp
         }
         v.isSelected = selected
-        v.background = if (selected) {
+        // on a custom header colour the chips are a see-through tint of the text colour, like Soul
+        val fill = if (hdrFg != 0) (hdrFg and 0xFFFFFF) or 0x33000000 else androidx.core.content.ContextCompat.getColor(ctx, R.color.pill)
+        v.background = if (selected || hdrFg != 0) {
             android.graphics.drawable.GradientDrawable().apply {
-                setColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.pill))
+                setColor(fill)
                 cornerRadius = hPx / 2f
-                if (outline) setStroke((2 * d).toInt(), COLORS[color.coerceIn(0, 7)])
+                if (selected && outline) setStroke((2 * d).toInt(), colorOf(color))
             }
         } else androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.bg_tab_off)
+        if (hdrFg != 0) {
+            v.findViewById<TextView>(R.id.tabTitle)?.setTextColor(hdrFg)
+            v.findViewById<ImageButton>(R.id.tabClose)?.setColorFilter(hdrFg)
+        }
         v.setPadding((((h / 4).coerceIn(5, 10)) * d).toInt(), 0, (2 * d).toInt(), 0)
         v.findViewById<ImageView>(R.id.tabIcon)?.let { ic ->
             val s = ((h * 0.62f).coerceIn(12f, 18f) * d).toInt()
@@ -76,6 +88,7 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
     class VH(v: View) : RecyclerView.ViewHolder(v) {
         val icon: ImageView = v.findViewById(R.id.tabIcon)
         val title: TextView = v.findViewById(R.id.tabTitle)
+        val badge: TextView = v.findViewById(R.id.tabBadge)
         val close: ImageButton = v.findViewById(R.id.tabClose)
     }
 
@@ -84,24 +97,35 @@ class TabStripAdapter(private val a: MainActivity) : RecyclerView.Adapter<TabStr
         return VH(v)
     }
 
-    override fun getItemCount() = a.tabs.size
+    override fun getItemCount() = a.slots.size
 
     override fun onBindViewHolder(h: VH, position: Int) {
-        val t = a.tabs[position]
-        val selected = position == a.current
-        val pf = Prefs(h.itemView.context)
+        val idx = a.slots.getOrNull(position) ?: return
+        val t = a.tabs[idx]
+        val selected = idx == a.current
+        val pf = a.prefs
         TabStyle.style(h.itemView, selected, pf.bool(K.TAB_OUTLINE), pf.int(K.TAB_COLOR),
-            pf.bool(K.TAB_CLOSE_BTN), pf.int(K.TAB_W_PCT), pf.int(K.TAB_H_PCT))
+            pf.bool(K.TAB_CLOSE_BTN), pf.int(K.TAB_W_PCT), pf.int(K.TAB_H_PCT), a.hdrFg())
+        // centre the chip in the row (a RecyclerView item sits at the top otherwise)
+        (h.itemView.layoutParams as? ViewGroup.MarginLayoutParams)?.let { lp ->
+            val d = h.itemView.resources.displayMetrics.density
+            lp.topMargin = ((TabStyle.rowDp(pf) - TabStyle.heightDp(pf)) / 2f * d).toInt()
+            h.itemView.layoutParams = lp
+        }
         h.title.text = t.label()
         h.title.setTypeface(h.title.typeface, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         h.icon.setTabIcon(t)
+        val n = a.groupSize(t.group)
+        h.badge.visibility = if (n > 1) View.VISIBLE else View.GONE
+        h.badge.text = n.toString()
         h.itemView.setOnClickListener {
             val p = h.bindingAdapterPosition
-            if (p != RecyclerView.NO_POSITION) a.select(p)
+            val i = a.slots.getOrNull(p) ?: return@setOnClickListener
+            if (i == a.current && a.groupSize(a.tabs[i].group) > 1) a.showGroupMenu(h.itemView, a.tabs[i].group) else a.select(i)
         }
         h.close.setOnClickListener {
-            val p = h.bindingAdapterPosition
-            if (p != RecyclerView.NO_POSITION) a.closeTab(p)
+            val i = a.slots.getOrNull(h.bindingAdapterPosition) ?: return@setOnClickListener
+            a.closeTab(i)
         }
     }
 }

@@ -405,6 +405,9 @@ class SettingsActivity : AppCompatActivity() {
         ch("img_bright", "Image brightness", listOf("30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"), 70,
             values = listOf(30, 40, 50, 60, 70, 80, 90, 100)),
         Gap,
+        ch(K.HDR_MODE, "Header", listOf("Default", "Custom"), 0, "Colour of the top bar, tab bar and status bar."),
+        col(K.HDR_COLOR, "Header color", 0xFFE53935.toInt()),
+        Gap,
         ch(K.SCREEN_FILTER, "Screen filter", listOf("Not used", "Weak", "Normal", "Strong"), 0),
         col(K.FILTER_COLOR, "Filter color", 0xFF000000.toInt()),
         Gap,
@@ -432,13 +435,15 @@ class SettingsActivity : AppCompatActivity() {
         ch("tab_add_pos", "Where to add tabs", listOf("Next to the current tab", "End of tab list"), 0) {
             prefs.setBool(K.TAB_NEXT, prefs.int("tab_add_pos") == 0)
         },
+        sw(K.AUTO_GROUP, "Automatic grouping", true, "They are automatically grouped when a new window opens on the site."),
+        Gap,
         ch(K.TAB_BAR_MODE, "Show tab bar", listOf("Not used", "Below top bar", "Above top bar"), 1),
         act("Detailed settings", "Colour, outline, buttons, width and height of the tabs",
             { "${prefs.int(K.TAB_W_PCT)}% x ${prefs.int(K.TAB_H_PCT)}%" }) { tabDetailDialog() },
         ch(K.TAB_SWIPE_UP, "Swipe up on tab bar", listOf("Not used", "Tab list", "Close tab", "New tab"), 1),
         ch(K.TAB_SWIPE_DN, "Swipe down on tab bar", listOf("Not used", "Tab list", "Close tab", "New tab"), 2),
         sw("tab_swipe_switch", "Swipe address bar to switch tabs", true, "Swipe left or right on the address bar to go to the tab on that side."),
-        sw(K.TAB_INDI, "Tab indicator", false, "Shows the current tab position, such as 2/5, on the tab button"),
+        sw(K.TAB_INDI, "Tab indicator", true, "Show tab position and number of tabs on tab button"),
         sw(K.TAB_UNDO, "Undelete", true, "Shows an Undo button after a tab is closed"),
         ch(K.TAB_VIEW, "Tab list style", listOf("Grid", "List", "Small list"), 0),
         Gap,
@@ -455,7 +460,7 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun tabDetailDialog() {
         var outline = prefs.bool(K.TAB_OUTLINE)
-        var color = prefs.int(K.TAB_COLOR).coerceIn(0, 7)
+        var color = TabStyle.colorOf(prefs.int(K.TAB_COLOR))   // ARGB
         var addRight = prefs.int(K.TAB_ADD_RIGHT) == 1
         var closeBtn = prefs.bool(K.TAB_CLOSE_BTN)
         var wPct = prefs.int(K.TAB_W_PCT).coerceIn(50, 200)
@@ -523,16 +528,24 @@ class SettingsActivity : AppCompatActivity() {
             d.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(TabStyle.COLORS[i])
-                if (i == color) setStroke(dp(3), if ((resources.configuration.uiMode and 0x30) == 0x20) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
+                if (TabStyle.COLORS[i] == color) setStroke(dp(3), if ((resources.configuration.uiMode and 0x30) == 0x20) 0xFFFFFFFF.toInt() else 0xFF000000.toInt())
             }
         }
-        for (i in 0..7) {
+        for (i in TabStyle.COLORS.indices) {
             val d = View(this)
             d.layoutParams = android.widget.LinearLayout.LayoutParams(dp(30), dp(30)).apply { setMargins(dp(3), 0, dp(3), 0) }
             d.contentDescription = TabStyle.NAMES[i]
-            d.setOnClickListener { color = i; paintDots(); refreshPreview() }
+            d.setOnClickListener { color = TabStyle.COLORS[i]; paintDots(); refreshPreview() }
             dots.add(d); colors.addView(d)
         }
+        // last dot: the full colour grid (any colour); it also shows a colour that is not in the row
+        val more = TextView(this).apply {
+            text = "+"; gravity = android.view.Gravity.CENTER; textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF9E9E9E.toInt()) }
+            contentDescription = "More colours"
+            setOnClickListener { Palette.pick(this@SettingsActivity, color) { c -> color = c; paintDots(); refreshPreview() } }
+        }
+        colors.addView(more, android.widget.LinearLayout.LayoutParams(dp(30), dp(30)).apply { setMargins(dp(3), 0, dp(3), 0) })
         paintDots()
         syncs.add { paintDots() }
         box.addView(android.widget.HorizontalScrollView(this).also { it.addView(colors) })
@@ -608,7 +621,7 @@ class SettingsActivity : AppCompatActivity() {
         dlg.setOnShowListener {
             // Reset restores Soul's defaults inside the dialog (and the preview) without closing it
             dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                outline = true; color = 4; addRight = true; closeBtn = true; wPct = 81; hPct = 73
+                outline = true; color = TabStyle.COLORS[4]; addRight = true; closeBtn = true; wPct = 81; hPct = 73
                 syncs.forEach { it() }
                 refreshPreview()
             }
@@ -869,12 +882,11 @@ class SettingsActivity : AppCompatActivity() {
                     swatch.visibility = View.VISIBLE
                     (swatch.background.mutate() as? GradientDrawable)?.setColor(prefs.int(r.key))
                     body.setOnClickListener {
-                        Ui.listSheet(this@SettingsActivity, r.title, PALETTE.map { (name, c) ->
-                            name to {
-                                prefs.setInt(r.key, c)
-                                notifyItemChanged(position)
-                            }
-                        })
+                        Palette.pick(this@SettingsActivity, prefs.int(r.key)) { c ->
+                            prefs.setInt(r.key, c)
+                            if (r.key == K.HDR_COLOR) prefs.setInt(K.HDR_MODE, 1)   // picking a colour turns "Custom" on
+                            notifyDataSetChanged()
+                        }
                     }
                 }
                 is Act -> {

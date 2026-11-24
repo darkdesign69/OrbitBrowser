@@ -1009,8 +1009,28 @@ class MainActivity : AppCompatActivity() {
         tab.host = hostOf(url)
         val w = tab.web ?: createWebView(tab)
         applyWebSettings(tab)
+        tab.progress = 0
         if (tab === tabs.getOrNull(current)) showTab()
         w.loadUrl(url)
+        watchLoad(tab, w, url, true)
+    }
+
+    /**
+     * A pasted link sometimes never started loading in an old tab, while the same link worked in a new tab (fresh WebView).
+     * If the page shows no progress after 5 s, the tab gets a fresh WebView and loads the link again (once).
+     */
+    private fun watchLoad(tab: Tab, w: WebView, url: String, retry: Boolean) {
+        ui.postDelayed({
+            if (tab.web !== w || tab.home || tab.progress >= 15) return@postDelayed
+            if (!retry) return@postDelayed
+            destroyTab(tab)
+            val nw = createWebView(tab)
+            applyWebSettings(tab)
+            tab.progress = 0
+            if (tab === tabs.getOrNull(current)) showTab()
+            nw.loadUrl(url)
+            watchLoad(tab, nw, url, false)
+        }, 5000)
     }
 
     private fun goHome() {
@@ -1341,7 +1361,7 @@ class MainActivity : AppCompatActivity() {
         return WebResourceResponse(mime, "utf-8", 200, "OK", mapOf("Access-Control-Allow-Origin" to "*"), ByteArrayInputStream(ByteArray(0)))
     }
 
-    /** Script that gives every web page the Orbit font (Source Code Pro). Icon fonts are left alone. */
+    /** Script that gives web pages the Orbit font (Source Code Pro). Zero specificity and no !important: any font a page sets itself on an element (icon fonts, player glyphs) wins, so icons never turn into empty boxes. */
     private val fontJs: String by lazy {
         try {
             val b64 = android.util.Base64.encodeToString(
@@ -1350,7 +1370,7 @@ class MainActivity : AppCompatActivity() {
             "(function(){if(window.__orbitFont)return;window.__orbitFont=1;try{var b=atob('" + b64 + "');" +
                 "var a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);" +
                 "var f=new FontFace('OrbitMono',a.buffer);document.fonts.add(f);f.load();" +
-                "var css='html,body,body *:not(i):not(svg):not(svg *):not([class*=icon i]):not([class*=fa-]):not([class^=fa]):not([class*=material i]):not([class*=glyph i]){font-family:OrbitMono,monospace !important}';" +
+                "var css=':where(html,body,body *:not(i):not(svg):not(svg *):not([class*=icon i]):not([class*=fa-]):not([class^=fa]):not([class*=material i]):not([class*=glyph i])){font-family:OrbitMono,monospace}';" +
                 "var s=new CSSStyleSheet();s.replaceSync(css);" +
                 "document.adoptedStyleSheets=Array.from(document.adoptedStyleSheets).concat([s]);}catch(e){}})()"
         } catch (_: Exception) {

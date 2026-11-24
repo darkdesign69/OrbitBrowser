@@ -196,6 +196,54 @@ object MediaUi {
     // ------------------------------------------------------------------ actions
 
     /** Hands a link to another app (1DM, ADM, a file manager ...). Used when Download manager is "Other apps". */
+    /** Name of the app chosen for "Other apps" (shown under Download manager in Settings). */
+    fun appLabel(c: Context): String {
+        val pkg = com.redowan.orbit.Prefs(c).str("dl_app")
+        if (pkg.isEmpty()) return "Other apps"
+        return try { c.packageManager.getApplicationLabel(c.packageManager.getApplicationInfo(pkg, 0)).toString() } catch (_: Exception) { "Other apps" }
+    }
+
+    /** Grid of the apps that can take a download link (1DM, ADM, browsers ...). The choice is saved in "dl_app". */
+    fun pickApp(c: Context, done: (Boolean) -> Unit) {
+        val pm = c.packageManager
+        val u = android.net.Uri.parse("https://example.com/video.mp4")
+        val found = pm.queryIntentActivities(android.content.Intent(android.content.Intent.ACTION_VIEW, u), 0) +
+            pm.queryIntentActivities(android.content.Intent(android.content.Intent.ACTION_VIEW).setDataAndType(u, "video/*"), 0)
+        val apps = found.map { it.activityInfo.applicationInfo }
+            .filter { it.packageName != c.packageName }
+            .distinctBy { it.packageName }
+            .sortedBy { pm.getApplicationLabel(it).toString().lowercase() }
+        if (apps.isEmpty()) { android.widget.Toast.makeText(c, "No app can download links", android.widget.Toast.LENGTH_SHORT).show(); done(false); return }
+        val d = c.resources.displayMetrics.density
+        var dlg: AlertDialog? = null
+        val grid = android.widget.GridView(c).apply {
+            numColumns = 4
+            verticalSpacing = (12 * d).toInt()
+            setPadding((8 * d).toInt(), (12 * d).toInt(), (8 * d).toInt(), 0)
+            adapter = object : android.widget.BaseAdapter() {
+                override fun getCount() = apps.size
+                override fun getItem(i: Int) = apps[i]
+                override fun getItemId(i: Int) = i.toLong()
+                override fun getView(i: Int, v: View?, p: ViewGroup?): View {
+                    val ai = apps[i]
+                    val col = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
+                    col.addView(ImageView(c).apply { setImageDrawable(pm.getApplicationIcon(ai)) }, LinearLayout.LayoutParams((48 * d).toInt(), (48 * d).toInt()))
+                    col.addView(TextView(c).apply {
+                        text = pm.getApplicationLabel(ai); textSize = 12f; gravity = Gravity.CENTER; maxLines = 2
+                        ellipsize = android.text.TextUtils.TruncateAt.END
+                    }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = (4 * d).toInt() })
+                    return col
+                }
+            }
+            setOnItemClickListener { _, _, i, _ ->
+                com.redowan.orbit.Prefs(c).setStr("dl_app", apps[i].packageName)
+                dlg?.dismiss(); done(true)
+            }
+        }
+        dlg = AlertDialog.Builder(c).setView(grid).setNegativeButton("Close") { _, _ -> done(false) }
+            .setOnCancelListener { done(false) }.show()
+    }
+
     fun openWithOtherApp(a: MainActivity, url: String, mime: String?, referer: String?, title: String?) {
         val view = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
             setDataAndType(android.net.Uri.parse(url), mime?.takeIf { it.isNotEmpty() } ?: "video/*")
@@ -209,6 +257,11 @@ object MediaUi {
         val own = a.packageManager.queryIntentActivities(view, 0)
             .filter { it.activityInfo.packageName == a.packageName }
             .map { android.content.ComponentName(it.activityInfo.packageName, it.activityInfo.name) }
+        val pkg = a.prefs.str("dl_app")
+        if (pkg.isNotEmpty()) {
+            // the app picked in Settings > Download > Download manager gets the link directly, no popup
+            try { a.startActivity(android.content.Intent(view).setPackage(pkg)); return } catch (_: Exception) { a.prefs.setStr("dl_app", "") }
+        }
         val chooser = android.content.Intent.createChooser(view, "Download with")
         if (own.isNotEmpty()) chooser.putExtra(android.content.Intent.EXTRA_EXCLUDE_COMPONENTS, own.toTypedArray())
         try { a.startActivity(chooser) } catch (_: Exception) { a.toast("No app can download this") }
@@ -225,7 +278,6 @@ object MediaUi {
         val cookie = cookieFor(m.url)
         val pageTitle = cleanName(a.cur.title).ifEmpty { m.name }
         if (a.prefs.int("dl_mgr") == 1) {
-            a.toast("Choose an app")
             openWithOtherApp(a, m.url, if (m.kind == MediaKind.HLS) "application/x-mpegURL" else null, m.referer ?: a.cur.url, pageTitle)
             return
         }

@@ -92,3 +92,7 @@ is laggy and the site/transition is not smooth. Done: measured sizes, Palette + 
 indicator default on, stale home favicon, faster tab switching + slide animation. Details: HANDOFF.md "Delivery 21".
 Base = orbit-full__6___6_.zip (identical to OrbitBrowser-main__4_ except .github). craft-anything / REA MCP tools were again not connected; measurements
 were made with PIL on the screenshots.
+
+Delivery 22: user (2026-11-24 afternoon) reported: Other apps should let you pick the download app once (Soul grid) with no popups afterwards; website icons show as boxes; pasted
+links sometimes do not load until a new tab is used. Done: app picker + direct launch (dl_app), font rule without !important, load watchdog. Details: HANDOFF.md "Delivery 22".
+Delivery 22b: fixed signing key + rising versionCode so APKs update in place (no package conflict).

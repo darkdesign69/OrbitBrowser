@@ -272,6 +272,7 @@ class Prefs(context: Context) {
             "img_bright" to 70,
             "back_nofresh" to true,
             "dl_mgr" to 0,
+            "dl_app" to "",
             "dl_fast" to 10,
             "dl_retry" to 10,
             "dl_conc" to 0,

@@ -162,3 +162,15 @@ Delivery 21 (UNVERIFIED by compile; from the user's Soul vs Orbit screenshots of
 - LAG when switching tabs (swipe address bar / chip): showTab detached and re-attached the WebView every time and rebound every chip. Now pages stay attached to
   webFrame and only visibility is toggled; select() rebinds just the two affected chips (refreshTabs(oldCur)) and runs slideIn() (160 ms slide+fade of the page area).
   healWeb no longer clears the other pages. If a page is still blank after a switch, look at healWeb and ThemeBg.refresh first.
+
+Delivery 22 (UNVERIFIED by compile; from the user's videos 402980 (Soul) / 402982 (Orbit) and screenshots of 2026-11-24 12:27-12:40). Base = orbit-full_6_7.zip (deliveries 20-21 by another session are in it; the older tree /home/claude/w/latest must NOT be used).
+- Download manager "Other apps" now works like Soul: Settings > Download > Download manager is an action row (value = "Default" or the chosen app name); "Other apps" opens a grid of apps
+  that can take a link (MediaUi.pickApp, queryIntentActivities for https VIEW + video/*; own app excluded) and saves the package in pref dl_app. MediaUi.openWithOtherApp then
+  starts that app directly (setPackage) - no "Download with" chooser and no "Choose an app" toast any more. If the app is gone the pref is cleared and the chooser is the fallback.
+  AndroidManifest got a <queries> block (package visibility, Android 11+) - needed for the app list.
+- Missing icons on websites (boxes with X in site video players): fontJs (App font on websites) used `!important` on every element, which overrode icon fonts that sites set themselves.
+  Now `:where(...)` (zero specificity) without !important: any font a page sets on an element wins, Orbit font only fills the rest.
+- Pasted link did not load in an existing tab but worked in a new tab (Orbit video: black page for 8 s): ROOT CAUSE NOT CONFIRMED. navigate() now sets tab.progress=0 and starts
+  watchLoad(): if the page shows no progress (>=15) after 5 s, the tab's WebView is destroyed, a fresh one is created and the link is loaded again (once). If it still happens,
+  ask for a screenshot right after pasting and check healWeb / showTab (delivery 21 keeps all pages attached to webFrame and only toggles visibility - suspect for black pages).
+ Delivery 22b: "package conflicts with an existing package" when installing a new build = every GitHub Actions run signed with a NEW random debug key. Fixed: app/orbit.keystore (committed, alias orbit, password orbitbrowser) is used for debug AND release (signingConfigs in app/build.gradle.kts); versionCode = current minutes since epoch (always higher), versionName 1.0.<GITHUB_RUN_NUMBER>. NEVER delete or regenerate the keystore: a different key breaks updates again. The user must uninstall the old (differently signed) Orbit ONCE; from then on every build installs as an update with data kept. For a public release use a private keystore instead.

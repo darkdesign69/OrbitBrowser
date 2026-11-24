@@ -352,8 +352,14 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun downloadRows(): List<Row> = listOf(
         act("Downloads", "Open the list of downloads.") { startActivity(Intent(this, DownloadsActivity::class.java)) },
-        ch("dl_mgr", "Download manager", listOf("Default", "Other apps"), 0,
-            "Other apps: choose another app (such as 1DM or ADM) to download the file or video."),
+        act("Download manager", "Other apps: choose another app (such as 1DM or ADM) to download the file or video.",
+            { if (prefs.int("dl_mgr") == 1) MediaUi.appLabel(this) else "Default" }) {
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Download manager")
+                .setItems(arrayOf("Default", "Other apps")) { _, which ->
+                    if (which == 0) { prefs.setInt("dl_mgr", 0); adapter.notifyDataSetChanged() }
+                    else MediaUi.pickApp(this) { ok -> if (ok) { prefs.setInt("dl_mgr", 1); adapter.notifyDataSetChanged() } }
+                }.show()
+        },
         act("Download location", "Folder inside Downloads where files are saved. Leave empty for the Downloads folder itself.",
             { Downloader.folderLabel(this) }) { MediaUi.pickFolder(this) { adapter.notifyDataSetChanged() } },
         Gap,

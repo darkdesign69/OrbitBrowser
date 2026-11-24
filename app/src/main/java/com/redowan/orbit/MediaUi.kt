@@ -96,16 +96,38 @@ object MediaUi {
         }
 
         val dialog = Ui.sheet(a, box)
+        // Like Soul: the qualities of every stream (master playlist) are listed as their own rows
+        class Var(val item: MediaItem, val label: String)
+        val vars = java.util.concurrent.CopyOnWriteArrayList<Var>()
+        val pageTitle = cleanName(a.cur.title)
         fun rebuild() {
             rows.removeAllViews()
             items.forEachIndexed { i, m -> rows.addView(row(a, i, m)) }
+            vars.forEachIndexed { k, v ->
+                rows.addView(row(a, items.size + k, v.item, v.label) {
+                    askDialog(a, v.item, null, (pageTitle.ifEmpty { v.item.name } + " " + v.label).trim(), a.userAgent(), cookieFor(v.item.url))
+                })
+            }
         }
         Downloader.listener = { rebuild() }
         dialog.setOnDismissListener { Downloader.listener = null }
         rebuild()
+        val ua0 = a.userAgent()
+        Thread {
+            for (m in items) {
+                if (m.kind != MediaKind.HLS) continue
+                val body = try { Downloader.fetchText(m.url, m, ua0, cookieFor(m.url)) } catch (_: Exception) { null }
+                if (body == null || !Hls.isMaster(body)) continue
+                Hls.variants(body, m.url).sortedByDescending { it.bandwidth }.forEach { v ->
+                    val res = v.resolution ?: (if (v.bandwidth > 0) "${v.bandwidth / 1000} kbps" else "Auto")
+                    if (vars.none { it.item.url == v.url }) vars.add(Var(MediaItem(v.url, MediaKind.HLS, "m3u8", m.referer, m.origin, m.ua), res))
+                }
+            }
+            if (vars.isNotEmpty()) a.runOnUiThread { rebuild() }
+        }.start()
     }
 
-    private fun row(a: MainActivity, index: Int, m: MediaItem): View {
+    private fun row(a: MainActivity, index: Int, m: MediaItem, label: String? = null, run: (() -> Unit)? = null): View {
         val job = Downloader.jobFor(m)
         val row = LinearLayout(a).apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -114,7 +136,7 @@ object MediaUi {
             val tv = TypedValue()
             a.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
             setBackgroundResource(tv.resourceId)
-            setOnClickListener { download(a, m) }
+            setOnClickListener { if (run != null) run() else download(a, m) }
         }
         row.addView(TextView(a).apply {
             text = (index + 1).toString()
@@ -124,7 +146,7 @@ object MediaUi {
 
         val mid = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
         mid.addView(TextView(a).apply {
-            text = m.name
+            text = label ?: m.name
             textSize = 16f
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
@@ -132,7 +154,7 @@ object MediaUi {
         })
         if (job != null) {
             val label = when (job.state) {
-                1 -> "Saved in Downloads/Orbit"
+                1 -> "Saved in " + Downloader.folderLabel(a).removePrefix("Device/")
                 2 -> "Failed: ${job.error ?: ""}"
                 else -> if (job.percent >= 0) "${job.percent}%" else "Downloading…"
             }
@@ -224,42 +246,123 @@ object MediaUi {
         }.start()
     }
 
-    /** Soul-style download dialog: name, location, share/info/play and Download / Fast download. */
+    /** Round grey icon button used in the download dialog (Soul: 40dp circles). */
+    private fun roundBtn(a: MainActivity, icon: Int, desc: String, click: () -> Unit) = ImageButton(a).apply {
+        setBackgroundResource(R.drawable.bg_media_btn)
+        setImageResource(icon)
+        imageTintList = ColorStateList.valueOf(Color.WHITE)
+        contentDescription = desc
+        scaleType = ImageView.ScaleType.CENTER_INSIDE
+        setPadding(a.dp(9), a.dp(9), a.dp(9), a.dp(9))
+        setOnClickListener { click() }
+        layoutParams = LinearLayout.LayoutParams(a.dp(40), a.dp(40)).also { it.marginStart = a.dp(10) }
+    }
+
+    /** Lets the user type the folder inside Downloads (used by the dialog and by Settings > Download). */
+    fun pickFolder(a: android.app.Activity, done: () -> Unit) {
+        val cur = Downloader.folder(a)
+        Ui.listSheet(a, "Download location", listOf(
+            "Downloads" to { Prefs(a).setStr("dl_dir", ""); done() },
+            "Downloads/Orbit" to { Prefs(a).setStr("dl_dir", "Orbit"); done() },
+            "Other folder in Downloads…" to {
+                Ui.prompt(a, "Folder name", "e.g. Videos", cur) { t -> Prefs(a).setStr("dl_dir", t.trim().trim('/')); done() }
+            }
+        ))
+    }
+
+    /** Soul-style download dialog: title row, name, location with 4 buttons, Download / Fast download. */
     private fun askDialog(a: MainActivity, m: MediaItem, variantUrl: String?, defName: String, ua: String, cookie: String?) {
-        val box = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(22), a.dp(16), a.dp(22), a.dp(8)) }
-        fun small(t: String) = TextView(a).apply { text = t; textSize = 12f; setTextColor(a.color(R.color.text_sub)) }
-        box.addView(small("Name"))
-        val nameField = android.widget.EditText(a).apply {
-            setText(defName); setSingleLine(true); setTextColor(a.color(R.color.text)); textSize = 15f
+        val box = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        fun small(t: String) = TextView(a).apply { text = t; textSize = 13f; setTextColor(a.color(R.color.text_sub)) }
+        fun line() = View(a).apply { setBackgroundColor(a.color(R.color.divider)) }
+
+        // header: play icon + file name (like Soul)
+        val ext = if (m.kind == MediaKind.HLS) "" else "." + m.ext
+        val head = LinearLayout(a).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = a.dp(72)
+            setPadding(a.dp(22), a.dp(8), a.dp(22), a.dp(8))
         }
-        box.addView(nameField)
-        box.addView(View(a), LinearLayout.LayoutParams(1, a.dp(14)))
+        if (m.playable) head.addView(ImageButton(a).apply {
+            setImageResource(R.drawable.ic_play_arrow)
+            contentDescription = "Play"
+            background = null
+            setOnClickListener { a.playMedia(m, false) }
+        }, LinearLayout.LayoutParams(a.dp(40), a.dp(40)))
+        head.addView(TextView(a).apply {
+            text = defName + ext
+            textSize = 16f
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setTextColor(a.color(R.color.text))
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).also { it.marginStart = a.dp(18) })
+        box.addView(head)
+        box.addView(line(), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1).also { it.setMargins(a.dp(16), 0, a.dp(16), 0) })
+
+        val body = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(22), a.dp(16), a.dp(22), a.dp(6)) }
+        body.addView(small("Name"))
+        val nameRow = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
+        val nameField = android.widget.EditText(a).apply {
+            setText(defName); setSingleLine(true); setTextColor(a.color(R.color.text)); textSize = 16f
+            setSelection(text.length)
+        }
+        nameRow.addView(nameField, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        nameRow.addView(ImageButton(a).apply {
+            setImageResource(Bars.icon(a, "outline_help", 24)); background = null; contentDescription = "Help"
+            setOnClickListener {
+                AlertDialog.Builder(a).setTitle("File name")
+                    .setMessage("The name the file gets in the download folder. The file type (for example .mp4) is added automatically.")
+                    .setPositiveButton("OK", null).show()
+            }
+        }, LinearLayout.LayoutParams(a.dp(44), a.dp(44)))
+        lateinit var dlg: androidx.appcompat.app.AppCompatDialog
+        nameRow.addView(ImageButton(a).apply {
+            setImageResource(Bars.icon(a, "outline_settings", 24)); background = null; contentDescription = "Download settings"
+            setOnClickListener { dlg.dismiss(); a.startActivity(android.content.Intent(a, SettingsActivity::class.java).putExtra("page", "download")) }
+        }, LinearLayout.LayoutParams(a.dp(44), a.dp(44)))
+        body.addView(nameRow)
+        body.addView(View(a), LinearLayout.LayoutParams(1, a.dp(22)))
+
         val loc = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         val locText = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
         locText.addView(small("Download location"))
-        locText.addView(TextView(a).apply { text = "Device/Download/Orbit"; textSize = 15f; setTextColor(a.color(R.color.text)) })
+        val locValue = TextView(a).apply {
+            text = Downloader.folderLabel(a); textSize = 16f; setTextColor(a.color(R.color.text))
+            setPadding(0, a.dp(4), 0, 0)
+        }
+        locText.addView(locValue)
         loc.addView(locText, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        loc.addView(iconButton(a, R.drawable.ic_share, "Share link") {
+        loc.addView(roundBtn(a, Bars.icon(a, "outline_open_with", 24), "Change location") {
+            pickFolder(a) { locValue.text = Downloader.folderLabel(a) }
+        })
+        loc.addView(roundBtn(a, R.drawable.ic_share, "Share link") {
             a.startActivity(android.content.Intent.createChooser(
                 android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(android.content.Intent.EXTRA_TEXT, m.url), "Share"))
         })
-        loc.addView(iconButton(a, R.drawable.ic_info, "Details") { info(a, m) })
-        if (m.playable) loc.addView(iconButton(a, R.drawable.ic_play_arrow, "Play") { a.playMedia(m, false) })
-        box.addView(loc)
-        val btns = LinearLayout(a).apply { setPadding(0, a.dp(10), 0, 0) }
-        lateinit var dlg: androidx.appcompat.app.AppCompatDialog
+        loc.addView(roundBtn(a, R.drawable.ic_info, "Details") { info(a, m) })
+        if (m.playable) loc.addView(roundBtn(a, R.drawable.ic_play_arrow, "Play") { a.playMedia(m, false) })
+        body.addView(loc)
+        box.addView(body)
+
         fun go(fast: Boolean) {
             val n = cleanName(nameField.text.toString()).ifEmpty { defName }
             dlg.dismiss()
             Downloader.start(a, m, variantUrl, ua, cookie, n, fast)
             a.toast("Download started")
         }
+        box.addView(line(), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1).also { it.setMargins(0, a.dp(12), 0, 0) })
+        val btns = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         fun textBtn(t: String, run: () -> Unit) = TextView(a).apply {
-            text = t; textSize = 15f; gravity = Gravity.CENTER; setTextColor(a.color(R.color.text))
-            setPadding(0, a.dp(14), 0, a.dp(14)); setOnClickListener { run() }
+            text = t; textSize = 16f; gravity = Gravity.CENTER; setTextColor(a.color(R.color.text))
+            minHeight = a.dp(60)
+            val tv = TypedValue()
+            a.theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+            setBackgroundResource(tv.resourceId)
+            setOnClickListener { run() }
         }
         btns.addView(textBtn("Download") { go(false) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        btns.addView(View(a).apply { setBackgroundColor(a.color(R.color.divider)) }, LinearLayout.LayoutParams(1, a.dp(28)))
         btns.addView(textBtn("Fast download") { go(true) }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         box.addView(btns)
         dlg = Ui.sheet(a, box)

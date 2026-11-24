@@ -98,6 +98,24 @@ Delivery 17: StartPage.DialAdapter.fetchIcon: home tiles without a saved icon fe
   (Soul shows real site icons, Orbit showed coloured letters). Soul home reference: circular/rounded icon tiles, folders labelled "Group"
   with mini icons, tab bar chips with a red count badge for groups. Soul popup menu reference: dropdown anchored top-right with a top icon
   row, three rounded groups of list rows and a bottom row (incognito, desktop, key). Orbit still uses its own menu look.
+Delivery 20 (UNVERIFIED by compile; from the user's Soul vs Orbit recordings of 2026-11-24 10:30-10:32, "Soul download is a different level, Orbit looks bad, popup too small, is the media circle too big?"):
+- MEASURED: the floating media button is 88 px in BOTH apps (Soul 952-1039, Orbit 864-950 at 1080 px width = 32dp). It is NOT too big: nothing changed.
+- Download dialog (MediaUi.askDialog) rebuilt to Soul's size: header row (play icon + file name, 16sp, 2 lines) + divider, "Name" label + 16sp field with help (?) and
+  settings (gear -> Settings > Download), "Download location" with 4 round 40dp buttons (change location, share, info, play), 60dp tall Download | Fast download row
+  with a vertical divider. Orbit's was ~20% of the screen, Soul's ~34%.
+- Streams: the qualities of every master playlist are listed as own rows in the Download sheet (like Soul: 856x480 ...), tap = dialog directly (no extra "Quality" sheet;
+  that sheet stays as fallback when a master row itself is tapped).
+- Download location is real now: pref dl_dir (default "Orbit" = Downloads/Orbit; empty = Downloads). Downloader.folder()/folderLabel(); MediaUi.pickFolder() (dialog button and
+  Settings > Download > Download location). Used by the own downloader (MediaStore RELATIVE_PATH), by DownloadManager downloads and by notifications.
+- BUG FIXED: finished stream downloads showed "126 B" (Job.done counts segments). Job.bytes now counts real bytes; Job.speed, Job.paused, Downloader.togglePause().
+- DownloadsActivity + activity_downloads.xml + item_download.xml rewritten in Soul's look (no wallpaper, plain black header, rounded panel): header "All v" filter
+  (All/Video/Audio/Image/Document/Archive/App/Other + Bookmarks/History shortcuts), refresh, search box, three-dot drop-down (Sort date/name/size, Show detail info,
+  Single line title, Settings; prefs dl_sort, dl_detail, dl_single). Rows: thumbnail (video/image via ContentResolver.loadThumbnail) or type icon, name, "dd/MM/yyyy  size",
+  three-dot menu (Open, Share, Rename, Delete). Running own downloads sit on top with progress, "x MB / y MB", ETA, pause/resume and close. The list now also shows files
+  from earlier sessions (MediaStore.Downloads query = files Orbit owns) instead of only the current session.
+- Not done: Soul's "All" = combined library; fast download for plain files (only streams use parallel workers); Background state timeout; Report site.
+- Base for this delivery = orbit-full__6___5_.zip (deliveries 15-19 by another session). The older orbit-full__16_ must NOT be used.
+
 Not done (next): tab switcher visuals, full Soul Library', to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 

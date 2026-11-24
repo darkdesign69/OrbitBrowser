@@ -183,7 +183,14 @@ object Downloader {
         @Volatile var uri: Uri? = null
         @Volatile var wantName: String? = null
         @Volatile var workers = 1
+        @Volatile var bytes = 0L           // bytes really written to the file (done counts segments for streams)
+        @Volatile var paused = false
         val startedAt = System.currentTimeMillis()
+        /** Average speed in bytes per second since the job started. */
+        val speed: Long get() {
+            val sec = (System.currentTimeMillis() - startedAt) / 1000.0
+            return if (sec < 1.0) 0L else (bytes / sec).toLong()
+        }
         val percent: Int get() = if (total > 0) ((done * 100) / total).toInt().coerceIn(0, 100) else -1
     }
 
@@ -217,6 +224,31 @@ object Downloader {
         job.cancelled = true
     }
 
+    /** Pause / resume a running job (own downloader only). */
+    fun togglePause(job: Job) {
+        if (job.state == 0) job.paused = !job.paused
+        main.post { listener?.invoke() }
+    }
+
+    /** Blocks the download thread while the job is paused. */
+    private fun holdIfPaused(job: Job) {
+        while (job.paused && !job.cancelled) {
+            try { Thread.sleep(300) } catch (_: InterruptedException) {}
+        }
+    }
+
+    /** Sub-folder of Downloads that files go to, from Settings / the download dialog. Default "Orbit". */
+    fun folder(ctx: Context): String {
+        val f = Prefs(ctx).str("dl_dir").trim().trim('/').replace(Regex("[\\\\:*?\"<>|]"), "_")
+        return f
+    }
+
+    /** Text shown as "Download location". */
+    fun folderLabel(ctx: Context): String {
+        val f = folder(ctx)
+        return if (f.isEmpty()) "Device/Download" else "Device/Download/$f"
+    }
+
     /** Saves bytes that are already in memory (blob: and data: downloads) to Downloads/Orbit. */
     fun saveBytes(ctx: Context, name: String, data: ByteArray): Job {
         val app = ctx.applicationContext
@@ -233,6 +265,7 @@ object Downloader {
                 try {
                     sink.write(data)
                     job.done = data.size.toLong()
+                    job.bytes = data.size.toLong()
                     job.uri = sink.finish()
                 } catch (e: Exception) {
                     sink.abort(); throw e
@@ -350,7 +383,7 @@ object Downloader {
         val tries = (Prefs(ctx).int("dl_retry") + 1).coerceIn(1, 20)
         val workers = java.util.concurrent.Executors.newFixedThreadPool(job.workers.coerceIn(1, 10))
         try {
-            pl.mapUri?.let { sink.write(bytes(it, item, ua, cookie, pl.mapOff, pl.mapLen)) }
+            pl.mapUri?.let { val mb = bytes(it, item, ua, cookie, pl.mapOff, pl.mapLen); sink.write(mb); job.bytes += mb.size }
             fun fetch(s: Hls.Seg): ByteArray {
                 var lastErr: Exception? = null
                 for (attempt in 1..tries) {
@@ -381,9 +414,11 @@ object Downloader {
             var written = 0L
             while (pending.isNotEmpty()) {
                 if (job.cancelled) throw IllegalStateException("Cancelled")
+                holdIfPaused(job)
                 val data = try { pending.poll()!!.get() } catch (e: java.util.concurrent.ExecutionException) { throw (e.cause as? Exception) ?: e }
                 sink.write(data)
                 written += data.size
+                job.bytes = written
                 job.done++
                 if (next < pl.segs.size) { val seg = pl.segs[next++]; pending.add(workers.submit(java.util.concurrent.Callable { fetch(seg) })) }
                 notifyUser(ctx, job, id, false)
@@ -403,10 +438,12 @@ object Downloader {
         var last = 0L
         while (true) {
             if (job.cancelled) throw IllegalStateException("Cancelled")
+            holdIfPaused(job)
             val n = input.read(buf)
             if (n < 0) break
             sink.write(buf, 0, n)
             job.done += n
+            job.bytes += n
             val now = System.currentTimeMillis()
             if (now - last > 700) {
                 last = now
@@ -434,7 +471,8 @@ object Downloader {
             val v = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, name)
                 put(MediaStore.Downloads.MIME_TYPE, if (ext in setOf("vtt", "srt", "ass", "ssa", "ts")) "application/octet-stream" else mime)
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Orbit")
+                val sub = folder(ctx)
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + (if (sub.isEmpty()) "" else "/$sub"))
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v)
@@ -483,7 +521,7 @@ object Downloader {
                 !final -> b.setSmallIcon(android.R.drawable.stat_sys_download).setOngoing(true)
                     .setProgress(100, job.percent.coerceAtLeast(0), job.percent < 0)
                 job.state == 1 -> b.setSmallIcon(android.R.drawable.stat_sys_download_done)
-                    .setContentText("Saved in Downloads/Orbit")
+                    .setContentText("Saved in " + folderLabel(ctx).removePrefix("Device/"))
                 else -> b.setSmallIcon(android.R.drawable.stat_notify_error)
                     .setContentText("Download failed: ${job.error ?: ""}")
             }

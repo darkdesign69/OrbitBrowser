@@ -81,3 +81,7 @@ Delivery 17: home tiles fetch real site icons (StartPage.fetchIcon). User asked 
 Delivery 18: menu row sizes from Soul bytecode (docs/SOUL_DIMENS.txt); audit showed menu/groups/tab chips already structurally match Soul.
 Delivery 19: blank page fix (SwipeRefreshLayout stale target -> permanent webFrame child); media button shrunk to Soul's 32dp.
 Delivery 19b: healWeb safety net for blank pages (user said it happens on almost every site).
+
+Delivery 20: user (2026-11-24) compared Soul and Orbit download recordings. Findings: Orbit button size already equals Soul's (88 px); Orbit's download dialog was too small
+and plain; stream quality list needed its own rows; the downloads screen did not look like Soul's (wallpaper cards, only current-session items, "126 B" size bug).
+Rebuilt dialog, downloads list, download location. Details in HANDOFF.md "Delivery 20".

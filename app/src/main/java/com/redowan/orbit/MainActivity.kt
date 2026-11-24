@@ -1449,7 +1449,7 @@ class MainActivity : AppCompatActivity() {
                 else DownloadManager.Request.VISIBILITY_VISIBLE
             )
             if (prefs.bool("dl_wifi")) req.setAllowedOverMetered(false)
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Orbit/$name")
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, (Downloader.folder(this).let { f -> if (f.isEmpty()) "" else "$f/" }) + name)
             (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(req)
             toast("Downloading $name")
             if (Build.VERSION.SDK_INT >= 33 && !askedNotifications &&

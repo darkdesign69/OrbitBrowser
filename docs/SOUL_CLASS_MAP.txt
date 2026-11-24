@@ -1,0 +1,125 @@
+# Soul Browser 1.4.86: own classes by package (from DEX; class names are not obfuscated)
+# Use this as a map of features. Orbit re-implements behaviour in its own code; nothing here is copied.
+
+## behavior (5)
+MyBehaviorBot, MyBehaviorDialog, MyBehaviorSnack, MyBehaviorTop, MyBehaviorWebTop
+
+## cast (5)
+CastLocal, CastOptionsProvider, CastServer, CastUtil, ExpandedControlsActivity
+
+## compress (7)
+Compress, CompressUtil, CompressUtilPdf, CompressUtilTar, CompressUtilUrl, CompressUtilZip, CompressUtilZip2
+
+## crop (3)
+CropImageView, Edge, Handle
+
+## curl (3)
+CurlMesh, CurlRenderer, CurlView
+
+## data (2)
+DataCast, DataUtil
+
+## data/book (1)
+DataBookList
+
+## db (4)
+DbAlbum, DbCmp, DbPdf, DbUtil
+
+## db/book (36)
+DbAdsCmd, DbBookAds, DbBookAgent, DbBookAlbum, DbBookBlock, DbBookCmp, DbBookDown, DbBookFilter, DbBookHistory, DbBookIcon, DbBookJava, DbBookLink, DbBookLocale, DbBookMemo, DbBookOver, DbBookPage, DbBookPass, DbBookPay, DbBookPdf, DbBookPms, DbBookPop, DbBookQuick, DbBookRecent, DbBookScript, DbBookSearch, DbBookSub, DbBookTab, DbBookTabOld, DbBookTmem, DbBookTrans, DbBookUser, DbBookVpos, DbBookWeb, DbRecentLang, DbTabState, DbTabThumb
+
+## dialog (149)
+DialogAdNative, DialogAllowPopup, DialogBackupLoad, DialogBackupSave, DialogBlockImage, DialogBlockLink, DialogCapture, DialogCast, DialogCastGuide, DialogConfirm, DialogCreateAlbum, DialogDeleteBook, DialogDeleteItem, DialogDownBlob, DialogDownEdit, DialogDownFile, DialogDownFont, DialogDownLink, DialogDownList, DialogDownPage, DialogDownSize, DialogDownUrl, DialogDownZip, DialogEditArea, DialogEditAuth, DialogEditCmd, DialogEditIcon, DialogEditMemo, DialogEditScript, DialogEditSearch, DialogEditShort, DialogEditText, DialogEditUp, DialogEditUrl, DialogEditVpn, DialogEditorEmoji, DialogEditorErase, DialogEditorPen, DialogEditorText, DialogExtract, DialogFileDelete, DialogFileRename, DialogGreeting, DialogGuideAds, DialogGuideArea, DialogGuideNoti, DialogImageBack, DialogImageType, DialogInfo, DialogListBook, DialogListGdrive, DialogLoadEmg, DialogLoadHmg, DialogLoadImg, DialogLockReset, DialogMenuList, DialogMenuMain, DialogNewsLocale, DialogNewsMenu, DialogNewsSearch, DialogOcrLoad, DialogOpenType, DialogPassInfo, DialogPassLoad, DialogPassSave, DialogPayQuiz, DialogPermission, DialogPopupMenu, DialogPreImage, DialogPreview, DialogPrintPage, DialogPrompt, DialogQuickColor, DialogQuickEdit, DialogQuickIcon, DialogSaveConfirm, DialogSaveSource, DialogSeekAudio, DialogSeekBright, DialogSeekFilter, DialogSeekSimple, DialogSeekSub, DialogSeekText, DialogSeekWeb, DialogSeekWebText, DialogSetAdblock, DialogSetAddr, DialogSetBar, DialogSetColumn, DialogSetCookie, DialogSetDark, DialogSetDesk, DialogSetDown, DialogSetFilter, DialogSetFull, DialogSetHead, DialogSetHistory, DialogSetImage, DialogSetImgTrans, DialogSetItem, DialogSetJava, DialogSetLock, DialogSetMsg, DialogSetOpen, DialogSetPms, DialogSetPopup, DialogSetPrivacy, DialogSetRate, DialogSetRead, DialogSetReset, DialogSetScrFil, DialogSetSort, DialogSetSort2, DialogSetSuggest, DialogSetTabDetail, DialogSetTabPos, DialogSetTabRestore, DialogSetTmem, DialogSetTrans, DialogSetTts, DialogSetUrl, DialogSetUseTts, DialogSetVideo, DialogSetVpn, DialogTabEdit, DialogTabFind, DialogTabMain, DialogTabMenu, DialogTabMini, DialogTransLang, DialogTransMsg, DialogUpdateFilter, DialogUpdateScript, DialogUrlLink, DialogVideoList, DialogVideoMenu, DialogViewRead, DialogViewSrc, DialogViewTrans, DialogWebBookDir, DialogWebBookEdit, DialogWebBookList, DialogWebBookLoad, DialogWebBookMove, DialogWebBookSave, DialogWebCerti, DialogWebSelect, DialogWebVie2, DialogWebView
+
+## down (12)
+DownParseDzen, DownParseKakao, DownParseList, DownParseM3u8, DownParseReddit, DownParseTsfile, DownParseVimeo, DownSaveAudio, DownSaveImage, DownSavePath, DownSaveSplit, DownSaveZip
+
+## drag (3)
+DragController, DragListItem, DragListView
+
+## editor (3)
+EditorActivity, EditorEffectAdapter, EditorEmoji
+
+## editor/core (5)
+GLToolbox, PhotoDrawView, PhotoEditor, PhotoEffectView, PhotoTouchListener
+
+## expand (2)
+ExpandListAdapter, ExpandListView
+
+## fragment (2)
+FragmentExpandView, FragmentTabPath
+
+## gdrive (2)
+GdriveAdapter, GdriveManager
+
+## glide (1)
+SvgDecoder
+
+## help (2)
+KeyHelper, PayHelper
+
+## image (15)
+ImageCoverView, ImageGifView, ImageListAdapter, ImageListHori, ImageListVert, ImageSeekBar, ImageThumbAdapter, ImageTransView, ImageViewActivity, ImageViewControl, ImageViewListHori, ImageViewListVert, ImageViewPageEffect, ImageViewPageScroll, ImageViewWrapper
+
+## list (6)
+ListScan, ListTask, ListTaskAlbum, ListTaskCast, ListTaskCmp, ListTaskPdf
+
+## list/book (22)
+ListBookAds, ListBookAgent, ListBookAlbum, ListBookBlock, ListBookCmp, ListBookDown, ListBookFilter, ListBookHistory, ListBookJava, ListBookLink, ListBookMemo, ListBookOver, ListBookPdf, ListBookPms, ListBookPop, ListBookScript, ListBookSearch, ListBookTab, ListBookTmem, ListBookTrans, ListBookUser, ListBookWeb
+
+## lock (6)
+FingerActivity, PassActivity, PatternActivity, PatternLock, PinActivity, PinLock
+
+## main (41)
+AddrIconAdapter, MainActivity, MainApp, MainAppAdapter, MainAreaAdapter, MainConst, MainDownAdapter, MainDownSize, MainDownSvc, MainDragAdapter, MainFilterDown, MainFilterSvc, MainHeadAdapter, MainLangAdapter, MainLauncher, MainListAdapter, MainListAdapter2, MainListLoader, MainListView, MainListView2, MainMusicActivity, MainPermission, MainScriptSvc, MainSelectAdapter, MainSwitchBlack, MainTorrentLauncher, MainTransLocale, MainTransNews, MainTransOcr, MainTransText, MainTxtAdapter, MainTxtView, MainUri, MainUriDoc, MainUriVol, MainUrl, MainUtil, MainWebDestroy, MenuIconAdapter, MenuListAdapter, NewsMenuAdapter
+
+## main/image (5)
+MainImageCropper, MainImagePreview, MainImageQuick, MainImageView, MainImageWallpaper
+
+## main/list (7)
+MainListAgent, MainListAlbum, MainListCast, MainListDown, MainListImage, MainListMemo, MainListSearch
+
+## ocr (1)
+OcrDetector
+
+## pref (21)
+PrefAlbum, PrefCore, PrefEditor, PrefFloat, PrefImage, PrefList, PrefMain, PrefPath, PrefPdf, PrefRead, PrefSecret, PrefSet, PrefSub, PrefSync, PrefTts, PrefUtil, PrefVideo, PrefWeb, PrefZone, PrefZtri, PrefZtwo
+
+## pull (1)
+MyPullView
+
+## quick (14)
+ListDragHelper, QuickAdapter, QuickAdd, QuickAddAdapter, QuickControl, QuickDragHelper, QuickNews, QuickNewsCustom, QuickNewsGoogle, QuickSearch, QuickSubView, QuickView, TabDragHelper, TabSubView
+
+## script (8)
+CriterionMatcher, DownloadHelper, Script, ScriptCache, ScriptId, UnicodeReader, WebViewXmlHttpRequest, WebViewXmlHttpResponse
+
+## setting (48)
+CastActivity, SettingActivity, SettingAdvanced, SettingBackup, SettingCast, SettingClean, SettingCustom, SettingDisplay, SettingDown, SettingFloat, SettingFont, SettingFontAdapter, SettingGeneral, SettingGesture, SettingHandArea, SettingHome, SettingImage, SettingImageTap, SettingInfo, SettingInfoLegalView, SettingInfoLicenseList, SettingLand, SettingLayout, SettingListAdapter, SettingMain, SettingMedia, SettingMemory, SettingMenu, SettingNews, SettingPassAdapter, SettingPassList, SettingPassword, SettingPay, SettingPrivacy, SettingQuick, SettingSecret, SettingSecure, SettingSense, SettingSite, SettingSwipe, SettingTab, SettingTrans, SettingTts, SettingVideo, SettingVideoSub, SettingVideoTap, SettingVpn, SettingWeb
+
+## subtitle (12)
+Caption, FormatASS, FormatPSB, FormatSCC, FormatSMI, FormatSTL, FormatSUB, FormatTTML, FormatVTT, Subtitle, SubtitleColor, Time
+
+## torrent (2)
+TorAlertDhtListener, TorrentStream
+
+## video (5)
+VideoActivity, VideoAudio, VideoControl, VideoSeekControl, VideoSubLayout
+
+## view (59)
+GlideApp, MyAdNative, MyAddrView, MyAreaView, MyArrowView, MyBarFrame, MyBarView, MyButtonCheck, MyButtonRelative, MyButtonText, MyClipView, MyCoverView, MyDialogBottom, MyDialogLinear, MyDialogNormal, MyEditAuto, MyEngineAdapter, MyEngineMenu, MyFadeFrame, MyFadeImage, MyFadeLinear, MyFadeRelative, MyFadeText, MyFadeView, MyFindView, MyGesNoti, MyGlideModule, MyGlideTarget, MyIconFrame, MyIconView, MyImageView, MyLinkView, MyListGroup, MyMainRelative, MyManagerLinear, MyMoveFrame, MyPaletteView, MyPopupAdapter, MyPopupMenu, MyProgressBar, MyProgressDrawable, MyProgressVideo, MyRecyclerView, MyRoundBack, MyRoundFrame, MyRoundImage, MyRoundItem, MyScrollBar, MyScrollNavi, MySelectView, MySnackbar, MySwitchView, MyTabFrame, MyTextImage, MyTextVertical, MyThumbView, MyWebBody, MyWebCoord, MyWebSafe
+
+## vpn (2)
+VpnAdapter, VpnSvc
+
+## web (37)
+WebClean, WebCrashView, WebEmgDialog, WebEmgLoad, WebEmgTask, WebGridAdapter, WebGridDialog, WebHmgDialog, WebHmgLoad, WebHmgTask, WebLauncher, WebLoadTask, WebLoadView, WebNestFrame, WebNestView, WebReadTask, WebSearchAdapter, WebSearchAdapter2, WebShortTab, WebShortcut, WebSnsInsta, WebSnsLoad, WebSnsTask, WebSnsTwit, WebSslView, WebTabAdapter, WebTabBarAdapter, WebTabBarSubView, WebTabGridItem, WebTransControl, WebTransOcrCtrl, WebVideoFull, WebVideoImage, WebVideoPip, WebVideoProgress, WebViewActivity, WebVkvLoad
+
+## widget (5)
+WidgetBookData, WidgetBookProviderBody, WidgetBookServiceBody, WidgetSearchActivity, WidgetSearchProviderBody
+
+## wview (9)
+WebAreaMenu, WebAreaText, WebAreaView, WebCastView, WebDownView, WebFltView, WebMoveText, WebTtsView, WebUpView
+
+## zoom (3)
+ZoomGestureDetector, ZoomImageAttacher, ZoomVideoAttacher

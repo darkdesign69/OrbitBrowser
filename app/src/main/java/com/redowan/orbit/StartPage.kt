@@ -138,11 +138,34 @@ class DialAdapter(private val a: MainActivity) : RecyclerView.Adapter<RecyclerVi
             h.icon.visibility = View.VISIBLE
             h.icon.setImageBitmap(fav)
         } else {
+            fetchIcon(hostOf(d.url))
             h.tile.background = Ui.roundRect(Ui.tileColor(hostOf(d.url).ifEmpty { d.title }), ctx.dp(22).toFloat())
             h.icon.visibility = View.GONE
             h.letter.visibility = View.VISIBLE
             h.letter.text = Ui.letterOf(d.title, d.url)
         }
+    }
+
+    private val tried = HashSet<String>()
+
+    /** Tiles without a saved icon (default sites) fetch the site's own icon once and keep it. */
+    private fun fetchIcon(host: String) {
+        if (host.isEmpty() || !tried.add(host)) return
+        Thread {
+            for (path in listOf("/apple-touch-icon.png", "/favicon.ico")) {
+                try {
+                    val c = java.net.URL("https://$host$path").openConnection() as java.net.HttpURLConnection
+                    c.connectTimeout = 5000; c.readTimeout = 5000
+                    val bmp = c.inputStream.use { android.graphics.BitmapFactory.decodeStream(it) }
+                    if (bmp != null && bmp.width >= 16) {
+                        a.store.saveFavicon(host, bmp)
+                        a.runOnUiThread { notifyDataSetChanged() }
+                        return@Thread
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }.start()
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {

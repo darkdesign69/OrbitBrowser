@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
                     customView != null -> hideCustomView()
                     findBar.visibility == View.VISIBLE -> closeFind()
                     cur.home && dialAdapter.goUp() -> {}
-                    cur.web?.canGoBack() == true && !cur.home -> cur.web?.goBack()
+                    cur.web?.canGoBack() == true && !cur.home -> goBackPage(cur.web!!)
                     !cur.home && tabs.size == 1 && prefs.int(K.BACK_LAST) == 0 -> {
                         if (prefs.bool(K.LAST_NOTI)) toast("This is the last page of the tab.")
                         goHome()
@@ -413,7 +413,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun goBackClick() {
         val w = cur.web
-        if (w != null && w.canGoBack() && !cur.home) w.goBack() else if (!cur.home) goHome()
+        if (w != null && w.canGoBack() && !cur.home) goBackPage(w) else if (!cur.home) goHome()
     }
 
     private fun barItem(id: String, bottom: Boolean): View? {
@@ -974,6 +974,15 @@ class MainActivity : AppCompatActivity() {
         return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$v Safari/537.36"
     }
 
+    /** Back; with "Go back without refresh" the page comes from the cache instead of the network. */
+    private fun goBackPage(w: WebView) {
+        if (prefs.bool("back_nofresh")) {
+            w.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+            w.goBack()
+            w.postDelayed({ w.settings.cacheMode = WebSettings.LOAD_DEFAULT }, 2500)
+        } else w.goBack()
+    }
+
     private fun isDesktop(tab: Tab) = tab.desktop || prefs.desktopAll || prefs.int(K.UA) == 1
 
     /** Desktop site: pages lay out on a 1280px wide canvas (like Chrome's "Desktop site"), not the phone width. */
@@ -1226,7 +1235,13 @@ class MainActivity : AppCompatActivity() {
             view.evaluateJavascript("var e=document.getElementById('orbit-dark');if(e)e.remove();", null)
             return
         }
-        view.evaluateJavascript(DARK_JS, null)
+        val b = if (prefs.bool("dark_img")) prefs.int("img_bright").coerceIn(20, 100) else 100
+        view.evaluateJavascript(
+            "(function(){var o=document.getElementById('orbit-dark');if(o)o.remove();var s=document.createElement('style');s.id='orbit-dark';" +
+                "s.textContent='html{filter:invert(1) hue-rotate(180deg)!important;background:#fff!important}" +
+                "img,video,picture,canvas,iframe,svg image{filter:invert(1) hue-rotate(180deg) brightness(" + b + "%)!important}';" +
+                "(document.head||document.documentElement).appendChild(s)})()", null
+        )
     }
 
     private fun chrome(tab: Tab) = object : WebChromeClient() {
@@ -1629,7 +1644,7 @@ class MainActivity : AppCompatActivity() {
                 if (store.isBookmarked(t.url)) "Bookmarked" else "Bookmark", false, needPage { toggleBookmark(it) })
             "bookmarks" -> ME(R.drawable.ic_bookmarks, "Bookmarks") { openLibrary("bookmarks") }
             "settings" -> ME(R.drawable.ic_settings, "Settings") { startActivity(Intent(this, SettingsActivity::class.java)) }
-            "back" -> ME(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) cur.web?.goBack() }
+            "back" -> ME(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) goBackPage(cur.web!!) }
             "forward" -> ME(R.drawable.ic_forward, "Forward") { if (cur.web?.canGoForward() == true) cur.web?.goForward() }
             "exit" -> ME(R.drawable.ic_power, "Exit app") { finishAndRemoveTask() }
             "history" -> ME(R.drawable.ic_history, "History") { openLibrary("history") }
@@ -1816,7 +1831,7 @@ class MainActivity : AppCompatActivity() {
         val t = cur
         val starred = store.isBookmarked(t.url)
         val items = listOf(
-            MenuItem(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) cur.web?.goBack() },
+            MenuItem(R.drawable.ic_back, "Back") { if (cur.web?.canGoBack() == true) goBackPage(cur.web!!) },
             MenuItem(R.drawable.ic_forward, "Forward") { if (cur.web?.canGoForward() == true) cur.web?.goForward() },
             MenuItem(R.drawable.ic_refresh, "Reload") { if (cur.home) dialAdapter.reload() else cur.web?.reload() },
             MenuItem(if (starred) R.drawable.ic_star else R.drawable.ic_star_border, if (starred) "Bookmarked" else "Bookmark", needPage { toggleBookmark(it) }),

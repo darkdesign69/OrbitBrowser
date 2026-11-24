@@ -84,6 +84,20 @@ Delivery 15 (UNVERIFIED by compile; from the user's Soul vs Orbit download video
   mode) and LAYER_TYPE_NONE; showTab wakes the page (visibility, alpha, onResume, resumeTimers, requestLayout). If it still happens, ask
   for a screenshot with Customize theme set to "No background" and test with the font switch (Display > App font on websites) off:
   MainActivity.fontJs injects a CSS rule with !important on every element and is the next suspect.
+Delivery 16 (UNVERIFIED by compile): user said Orbit still feels cheap/different and chose "All, fast". Added: player gestures
+  (PlayerActivity: hud overlay, brightness/volume, horizontal seek, double tap, long press 2x), Display > Dark image + Image brightness,
+  Memory > Go back without refresh (goBackPage uses LOAD_CACHE_ELSE_NETWORK for 2.5 s), docs/PARITY_CHECKLIST.md (list of Soul options
+  missing in Orbit, produced by comparing quoted titles in docs/SOUL_SETTINGS_SPEC.txt with the Kotlin sources: next sessions should
+  work through it). Soul reference screenshots of the settings pages are in the user's Screenshots.zip (re-ask if needed).
+Analysis note (delivery 16): craft-anything / REA MCP tools are NOT connected in the Claude sessions used so far; analysis is done with
+  tools/soul/*.py. docs/SOUL_CLASS_MAP.txt lists Soul's 576 own classes by package (dialog 149, view 59, setting 48, main 41, web 37,
+  list/book, db/book, image, quick, script, subtitle, torrent, vpn ...). Soul builds almost all UI in code (only ~100 library layout XMLs),
+  so exact sizes must be measured from screenshots/recordings or read from dex constants; next step per feature: scan the class's methods
+  (tools/soul/pages.py approach) for strings/resources/pref keys, then write original code.
+Delivery 17: StartPage.DialAdapter.fetchIcon: home tiles without a saved icon fetch /apple-touch-icon.png or /favicon.ico once and cache it
+  (Soul shows real site icons, Orbit showed coloured letters). Soul home reference: circular/rounded icon tiles, folders labelled "Group"
+  with mini icons, tab bar chips with a red count badge for groups. Soul popup menu reference: dropdown anchored top-right with a top icon
+  row, three rounded groups of list rows and a bottom row (incognito, desktop, key). Orbit still uses its own menu look.
 Not done (next): tab switcher visuals, full Soul Library', to Soul's look, element inspection/block area, floating buttons,
 video manager/player gestures, reader/translator extras, Soul-style bottom sheet menu, userscripts.
 

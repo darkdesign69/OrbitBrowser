@@ -379,6 +379,9 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private fun memoryRows(): List<Row> = listOf(
+        Head(ic("outline_description"), "Page"),
+        sw("back_nofresh", "Go back without refresh", true,
+            "Some sites may not be supported. This feature uses more memory."),
         Head(ic("outline_filter_none"), "Tab"),
         ch(K.TAB_OPEN_LIMIT, "Open limit", listOf("Unlimited", "5", "10", "20", "50"), 0,
             "If you exceed the limit, the first tab will be automatically deleted.\nIf too many tabs are open, the browser may slow down.",
@@ -396,7 +399,10 @@ class SettingsActivity : AppCompatActivity() {
         sw(ThemeBg.WEB_FONT, "App font on websites", true, "Shows web pages in the Orbit font (Source Code Pro). Reload the page to apply."),
         Gap,
         ch(K.THEME, "UI", listOf("System", "Light", "Dark"), 2) { OrbitApp.applyNightMode(prefs.int(K.THEME)) },
-        sw(K.PAGE_DARK, "Web page", false, "Darkens page colours, keeps images normal."),
+        sw(K.PAGE_DARK, "Web page", false, "Darkens page colours."),
+        sw("dark_img", "Dark image", true, "Applies only when the webpage is in dark mode."),
+        ch("img_bright", "Image brightness", listOf("30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"), 70,
+            values = listOf(30, 40, 50, 60, 70, 80, 90, 100)),
         Gap,
         ch(K.SCREEN_FILTER, "Screen filter", listOf("Not used", "Weak", "Normal", "Strong"), 0),
         col(K.FILTER_COLOR, "Filter color", 0xFF000000.toInt()),
